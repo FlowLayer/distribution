@@ -10,7 +10,7 @@ PackageIdentifier: FlowLayer.FlowLayer
 PackageVersion: 1.0.0
 PackageName: FlowLayer
 Publisher: FlowLayer
-License: TODO-VERIFY-LICENSE
+License: Proprietary
 ShortDescription: FlowLayer distribution draft. Winget publication currently blocked by split server and TUI archives.
 Installers:
   - Architecture: x64

@@ -2,7 +2,7 @@
   "version": "{{VERSION}}",
   "description": "FlowLayer local process orchestration for development workflows",
   "homepage": "https://flowlayer.tech",
-  "license": "TODO-VERIFY-LICENSE",
+  "license": "Proprietary",
   "architecture": {
     "64bit": {
       "url": [

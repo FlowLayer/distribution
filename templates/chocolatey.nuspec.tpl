@@ -7,7 +7,7 @@
     <authors>FlowLayer</authors>
     <owners>FlowLayer</owners>
     <projectUrl>https://flowlayer.tech</projectUrl>
-    <licenseUrl>https://flowlayer.tech/TODO-VERIFY-LICENSE</licenseUrl>
+    <licenseUrl>https://flowlayer.tech/Proprietary</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>FlowLayer local process orchestration for development workflows.</summary>
     <description>FlowLayer package for flowlayer-server and flowlayer-client-tui. Generated for release {{RELEASE_TAG}} from two sources: server artifacts from FlowLayer/flowlayer and TUI artifacts from FlowLayer/tui.</description>

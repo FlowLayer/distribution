@@ -19,6 +19,13 @@ FlowLayer binaries are native Go executables and do not require an additional ru
 
 The current distribution state intentionally aggregates two independent release sources. A future single `flowlayer` bundle (containing both binaries per OS/arch) remains possible and would simplify some package managers.
 
+## Licensing
+
+- `flowlayer-server` is distributed as proprietary software.
+- `flowlayer-client-tui` is distributed from the public `FlowLayer/tui` project.
+- This distribution repository (scripts, templates, and manifests) is licensed under Apache-2.0.
+- Package manager metadata uses `Proprietary` because the installed `flowlayer` package includes the proprietary server binary.
+
 ## Distribution Strategy
 
 Phase 1:
@@ -85,6 +92,8 @@ Homebrew on Linux can also be supported through the same formula strategy, provi
 Using `curl | sh` is practical for onboarding and upgrades, but inspectable download-first usage is supported and recommended for users who want to review the script before execution.
 
 ## Target Release Pipeline
+
+Current assumption: server and TUI releases share the same version tag.
 
 1. Create tag `vX.Y.Z` in the main FlowLayer repository.
 2. Build multi-OS and multi-architecture artifacts.

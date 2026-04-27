@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck if needed
+        run: |
+          set -euo pipefail
+          if ! command -v shellcheck >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y shellcheck
+          fi
+
+      - name: Bash syntax checks
+        run: |
+          bash -n scripts/common.sh scripts/release-sync.sh scripts/update-homebrew.sh scripts/update-winget.sh scripts/update-scoop.sh scripts/update-chocolatey.sh scripts/test-release-sync.sh
+
+      - name: POSIX syntax check (install.sh)
+        run: |
+          sh -n install.sh
+
+      - name: ShellCheck
+        run: |
+          shellcheck install.sh scripts/*.sh
+
+      - name: Validate Scoop JSON
+        run: |
+          python3 -m json.tool scoop/bucket/flowlayer.json >/dev/null
+
+      - name: Release sync consistency test
+        run: |
+          bash scripts/test-release-sync.sh
