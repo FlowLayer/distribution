@@ -1,9 +1,6 @@
 #!/bin/sh
 
 set -eu
-if (set -o pipefail) >/dev/null 2>&1; then
-  set -o pipefail
-fi
 
 info() {
   printf 'INFO: %s\n' "$*"
