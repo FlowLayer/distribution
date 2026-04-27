@@ -146,7 +146,7 @@ resolve_release_tag() {
   repo="$2"
   metadata_url="https://api.github.com/repos/${owner}/${repo}/releases/latest"
 
-  latest_tag="$(curl -fsSL "$metadata_url" | awk -F '"' '/"tag_name"[[:space:]]*:/ { print $4; exit }')"
+  latest_tag="$(curl -fsSL "$metadata_url" | awk -F '"' '/"tag_name"[[:space:]]*:/ { if (tag == "") tag = $4 } END { print tag }')"
   if [ -z "$latest_tag" ]; then
     fail "Unable to resolve latest release tag from ${metadata_url}. Set FLOWLAYER_VERSION explicitly."
   fi
