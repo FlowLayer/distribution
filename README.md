@@ -46,6 +46,14 @@ These are target commands and may not work end-to-end until public packages are 
 
 Winget note: with today’s split Windows assets (server and TUI published as separate archives), `FlowLayer.FlowLayer` is kept as a draft manifest and is not considered cleanly publishable until a single Windows bundle exists for each architecture.
 
+## Winget Local Bundle Preparation
+
+Winget requires a single Windows bundle to install both FlowLayer binaries cleanly.
+
+Run `scripts/build-winget-bundles.sh` to create local bundles used for validation. These generated bundles are local artifacts only and are not committed to Git.
+
+Publishing Winget still requires uploading those bundle assets to a GitHub Release (or another stable public URL) before submitting final manifests.
+
 Windows (Winget):
 
 ```sh
