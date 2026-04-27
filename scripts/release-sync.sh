@@ -22,7 +22,9 @@ log 'Placeholders are kept only when a checksum entry is missing.'
 
 for template_path in \
   "${ROOT_DIR}/templates/homebrew-formula.rb.tpl" \
-  "${ROOT_DIR}/templates/winget-manifest.yaml.tpl" \
+  "${ROOT_DIR}/templates/winget-version.yaml.tpl" \
+  "${ROOT_DIR}/templates/winget-installer.yaml.tpl" \
+  "${ROOT_DIR}/templates/winget-locale.en-US.yaml.tpl" \
   "${ROOT_DIR}/templates/scoop.json.tpl" \
   "${ROOT_DIR}/templates/chocolatey.nuspec.tpl" \
   "${ROOT_DIR}/templates/chocolateyinstall.ps1.tpl"; do

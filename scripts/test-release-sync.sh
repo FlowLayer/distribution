@@ -49,6 +49,15 @@ assert_file_contains_fixed() {
   fi
 }
 
+assert_file_not_contains_fixed() {
+  local file_path="$1"
+  local pattern="$2"
+
+  if grep -F -q -- "${pattern}" "${file_path}"; then
+    fail "Unexpected pattern found in ${file_path}: ${pattern}"
+  fi
+}
+
 assert_regex_count_at_least() {
   local file_path="$1"
   local regex="$2"
@@ -107,7 +116,14 @@ require_file homebrew/Formula/flowlayer.rb
 require_file scoop/bucket/flowlayer.json
 require_file chocolatey/flowlayer/flowlayer.nuspec
 require_file chocolatey/flowlayer/tools/chocolateyinstall.ps1
-require_file winget/manifests/FlowLayer.FlowLayer/flowlayer.yaml
+require_file "winget/manifests/FlowLayer.FlowLayer/${TARGET_VERSION}/FlowLayer.FlowLayer.yaml"
+require_file "winget/manifests/FlowLayer.FlowLayer/${TARGET_VERSION}/FlowLayer.FlowLayer.installer.yaml"
+require_file "winget/manifests/FlowLayer.FlowLayer/${TARGET_VERSION}/FlowLayer.FlowLayer.locale.en-US.yaml"
+
+WINGET_VERSION_MANIFEST_PATH="winget/manifests/FlowLayer.FlowLayer/${TARGET_VERSION}/FlowLayer.FlowLayer.yaml"
+WINGET_INSTALLER_MANIFEST_PATH="winget/manifests/FlowLayer.FlowLayer/${TARGET_VERSION}/FlowLayer.FlowLayer.installer.yaml"
+WINGET_LOCALE_MANIFEST_PATH="winget/manifests/FlowLayer.FlowLayer/${TARGET_VERSION}/FlowLayer.FlowLayer.locale.en-US.yaml"
+WINGET_LEGACY_MANIFEST_PATH='winget/manifests/FlowLayer.FlowLayer/flowlayer.yaml'
 
 assert_absent_fixed "${LEGACY_VERSION}" "${SEARCH_PATHS[@]}"
 assert_absent_fixed "${LEGACY_TAG}" "${SEARCH_PATHS[@]}"
@@ -117,8 +133,25 @@ assert_present_fixed "FlowLayer/flowlayer/releases/download/${TARGET_TAG}" "${SE
 assert_present_fixed "FlowLayer/tui/releases/download/${TARGET_TAG}" "${SEARCH_PATHS[@]}"
 
 assert_file_contains_fixed scoop/bucket/flowlayer.json '"license": "Proprietary"'
-assert_file_contains_fixed winget/manifests/FlowLayer.FlowLayer/flowlayer.yaml 'License: Proprietary'
+assert_file_contains_fixed "${WINGET_LOCALE_MANIFEST_PATH}" 'License: Proprietary'
 assert_file_contains_fixed chocolatey/flowlayer/flowlayer.nuspec 'Proprietary'
+
+assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" "flowlayer-${TARGET_VERSION}-windows-amd64.zip"
+assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" "flowlayer-${TARGET_VERSION}-windows-arm64.zip"
+assert_file_contains_fixed "${WINGET_LOCALE_MANIFEST_PATH}" 'PackageLocale: en-US'
+assert_file_contains_fixed "${WINGET_VERSION_MANIFEST_PATH}" 'ManifestType: version'
+assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" 'ManifestType: installer'
+assert_file_contains_fixed "${WINGET_LOCALE_MANIFEST_PATH}" 'ManifestType: defaultLocale'
+assert_file_not_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" 'split archives'
+
+if [[ "${TARGET_VERSION}" == '1.0.0' ]]; then
+  assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" '313ad7eb643e25517861f8652041cf80d91aa05831497cac9645c147ae94497b'
+  assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" '1b31622b3da8eff7acc6e5d78486130488eafc78adc5fa5f09ae9bbcaeb4a312'
+fi
+
+if [[ -f "${WINGET_LEGACY_MANIFEST_PATH}" ]]; then
+  fail "Legacy Winget singleton manifest should not exist: ${WINGET_LEGACY_MANIFEST_PATH}"
+fi
 
 assert_regex_count_at_least homebrew/Formula/flowlayer.rb 'sha256 "[0-9a-f]{64}"' 2
 assert_regex_count_at_least scoop/bucket/flowlayer.json '"[0-9a-f]{64}"' 4

@@ -44,15 +44,26 @@ Phase 3 (future work):
 
 These are target commands and may not work end-to-end until public packages are published with real artifact URLs and checksums.
 
-Winget note: with today’s split Windows assets (server and TUI published as separate archives), `FlowLayer.FlowLayer` is kept as a draft manifest and is not considered cleanly publishable until a single Windows bundle exists for each architecture.
+Winget note: public v1.0.0 bundled Windows assets now exist on `FlowLayer/flowlayer` and the local Winget manifest targets those unified archives.
+Submitting to `winget-pkgs` and real publication remains a separate step.
+
+Generated Winget multi-file manifests are written under `winget/manifests/FlowLayer.FlowLayer/1.0.0/`.
 
 ## Winget Local Bundle Preparation
 
-Winget requires a single Windows bundle to install both FlowLayer binaries cleanly.
+Public assets are available in `https://github.com/FlowLayer/flowlayer/releases/tag/v1.0.0`:
+- `flowlayer-1.0.0-windows-amd64.zip`
+- `flowlayer-1.0.0-windows-arm64.zip`
 
-Run `scripts/build-winget-bundles.sh` to create local bundles used for validation. These generated bundles are local artifacts only and are not committed to Git.
+Run `scripts/build-winget-bundles.sh` to rebuild equivalent local bundles for validation. These generated bundles are local artifacts only and are not committed to Git.
 
-Publishing Winget still requires uploading those bundle assets to a GitHub Release (or another stable public URL) before submitting final manifests.
+Validate on Windows with:
+
+```powershell
+winget validate .\winget\manifests\FlowLayer.FlowLayer\1.0.0
+```
+
+Submission to `winget-pkgs` and real publication remain separate operational steps.
 
 Windows (Winget):
 
