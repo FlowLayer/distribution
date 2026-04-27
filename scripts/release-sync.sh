@@ -17,7 +17,8 @@ RELEASE_INPUT="${2:-$1}"
 prepare_release_context "${VERSION_INPUT}" "${RELEASE_INPUT}"
 
 log "Release sync start (VERSION=${VERSION}, RELEASE_TAG=${RELEASE_TAG})"
-log 'By default, URLs and checksums are placeholders unless provided via environment variables.'
+log 'Checksums are loaded from local dist SHA256SUMS when available.'
+log 'Placeholders are kept only when a checksum entry is missing.'
 
 for template_path in \
   "${ROOT_DIR}/templates/homebrew-formula.rb.tpl" \
@@ -34,7 +35,7 @@ done
 "${SCRIPT_DIR}/update-chocolatey.sh" "${VERSION}" "${RELEASE_TAG}"
 
 log 'Generation complete.'
-log 'Checksums must come from SHA256SUMS published in the matching GitHub Release.'
+log 'Review generated files before publication and confirm checksum provenance in release SHA256SUMS.'
 log 'No git commit and no git push were performed.'
 
 if command -v git >/dev/null 2>&1 && git -C "${ROOT_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then

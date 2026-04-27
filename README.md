@@ -11,8 +11,13 @@ It does not contain the application source code.
 - Installed binaries:
   - `flowlayer-server`
   - `flowlayer-client-tui`
+- Current artifact sources (v1.0.0):
+  - Server release: `FlowLayer/flowlayer`
+  - TUI release: `FlowLayer/tui`
 
 FlowLayer binaries are native Go executables and do not require an additional runtime dependency to run.
+
+The current distribution state intentionally aggregates two independent release sources. A future single `flowlayer` bundle (containing both binaries per OS/arch) remains possible and would simplify some package managers.
 
 ## Distribution Strategy
 
@@ -31,6 +36,8 @@ Phase 3 (future work):
 ## Target Installation Commands
 
 These are target commands and may not work end-to-end until public packages are published with real artifact URLs and checksums.
+
+Winget note: with today’s split Windows assets (server and TUI published as separate archives), `FlowLayer.FlowLayer` is kept as a draft manifest and is not considered cleanly publishable until a single Windows bundle exists for each architecture.
 
 Windows (Winget):
 
@@ -107,3 +114,4 @@ Updates should ideally go through automated pull requests, not direct pushes.
 - Advanced notarization/signing workflows
 - Potential Microsoft Store distribution path
 - Optional package split strategy (`flowlayer-server` / `flowlayer-client-tui`) if ecosystem constraints require it
+- Optional single-bundle `flowlayer` artifact per OS/arch to simplify Winget publication

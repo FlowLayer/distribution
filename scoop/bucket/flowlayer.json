@@ -5,14 +5,34 @@
   "license": "TODO-VERIFY-LICENSE",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer_windows_amd64.zip",
-      "hash": "REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS"
+      "url": [
+        "https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-server-1.0.0-windows-amd64.zip",
+        "https://github.com/FlowLayer/tui/releases/download/v1.0.0/flowlayer-client-tui-1.0.0-windows-amd64.zip"
+      ],
+      "hash": [
+        "a0e64c9d68cff7c27809aca06572ebf938b8b76e9ef292513c381814bac2fc75",
+        "3fc0111b57d82d1d2c1883842c17f9d22fab7d1dad927104e72521068b41392b"
+      ]
     },
     "arm64": {
-      "url": "https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer_windows_arm64.zip",
-      "hash": "REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS"
+      "url": [
+        "https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-server-1.0.0-windows-arm64.zip",
+        "https://github.com/FlowLayer/tui/releases/download/v1.0.0/flowlayer-client-tui-1.0.0-windows-arm64.zip"
+      ],
+      "hash": [
+        "d6148c91d249f11c74bf030c0d4d1d53e00b177f11cbb00b50f2b38dfe29e929",
+        "378ad56a46266bf87d74946f34aa239bad4c546404ca78acd8c8478ffb3dd19c"
+      ]
     }
   },
+  "pre_install": [
+    "$serverExe = Get-ChildItem -Path $dir -Recurse -Filter 'flowlayer-server.exe' | Select-Object -First 1",
+    "if (-not $serverExe) { throw 'flowlayer-server.exe not found after extraction' }",
+    "Copy-Item -Path $serverExe.FullName -Destination (Join-Path $dir 'flowlayer-server.exe') -Force",
+    "$tuiExe = Get-ChildItem -Path $dir -Recurse -Filter 'flowlayer-client-tui.exe' | Select-Object -First 1",
+    "if (-not $tuiExe) { throw 'flowlayer-client-tui.exe not found after extraction' }",
+    "Copy-Item -Path $tuiExe.FullName -Destination (Join-Path $dir 'flowlayer-client-tui.exe') -Force"
+  ],
   "bin": [
     "flowlayer-server.exe",
     "flowlayer-client-tui.exe"
@@ -23,15 +43,21 @@
   "autoupdate": {
     "architecture": {
       "64bit": {
-        "url": "https://github.com/FlowLayer/flowlayer/releases/download/v$version/flowlayer_windows_amd64.zip"
+        "url": [
+          "https://github.com/FlowLayer/flowlayer/releases/download/v$version/flowlayer-server-$version-windows-amd64.zip",
+          "https://github.com/FlowLayer/tui/releases/download/v$version/flowlayer-client-tui-$version-windows-amd64.zip"
+        ]
       },
       "arm64": {
-        "url": "https://github.com/FlowLayer/flowlayer/releases/download/v$version/flowlayer_windows_arm64.zip"
+        "url": [
+          "https://github.com/FlowLayer/flowlayer/releases/download/v$version/flowlayer-server-$version-windows-arm64.zip",
+          "https://github.com/FlowLayer/tui/releases/download/v$version/flowlayer-client-tui-$version-windows-arm64.zip"
+        ]
       }
     }
   },
   "notes": [
     "Generated for release tag v1.0.0.",
-    "Replace placeholder checksums before publication."
+    "Dual-source package: server from FlowLayer/flowlayer and TUI from FlowLayer/tui."
   ]
 }

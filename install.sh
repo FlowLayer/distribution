@@ -57,27 +57,155 @@ normalize_arch() {
   esac
 }
 
+asset_os() {
+  normalized_os="$1"
+  case "$normalized_os" in
+    linux)
+      printf 'linux\n'
+      ;;
+    darwin)
+      printf 'macos\n'
+      ;;
+    *)
+      fail "Unsupported install OS for archives: $normalized_os"
+      ;;
+  esac
+}
+
+extract_sha256_from_sums() {
+  sums_file="$1"
+  asset_name="$2"
+
+  awk -v target="$asset_name" '
+{
+  hash = $1
+  if (length(hash) != 64 || hash !~ /^[0-9A-Fa-f]+$/) {
+    next
+  }
+
+  file_path = $0
+  sub(/^[0-9A-Fa-f]+[[:space:]]+/, "", file_path)
+  sub(/^\*/, "", file_path)
+  sub(/^\.\/+/, "", file_path)
+  part_count = split(file_path, path_parts, "/")
+  base_name = path_parts[part_count]
+  if (file_path == target || base_name == target) {
+    print tolower(hash)
+    found = 1
+    exit
+  }
+}
+
+END {
+  if (!found) {
+    exit 1
+  }
+}
+' "$sums_file"
+}
+
+compute_sha256() {
+  artifact_path="$1"
+
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$artifact_path" | awk '{print $1}'
+    return 0
+  fi
+
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$artifact_path" | awk '{print $1}'
+    return 0
+  fi
+
+  fail 'No checksum command available (need sha256sum or shasum).'
+}
+
+verify_archive_checksum() {
+  archive_path="$1"
+  sums_path="$2"
+  archive_name="$3"
+  component_label="$4"
+
+  if [ ! -f "$sums_path" ]; then
+    warn "$component_label: SHA256SUMS not available at $sums_path. Skipping checksum verification."
+    return 0
+  fi
+
+  expected_sha256="$(extract_sha256_from_sums "$sums_path" "$archive_name" || true)"
+  if [ -z "$expected_sha256" ]; then
+    fail "$component_label: SHA256SUMS exists but has no checksum entry for $archive_name"
+  fi
+
+  actual_sha256="$(compute_sha256 "$archive_path")"
+  if [ "$expected_sha256" != "$actual_sha256" ]; then
+    fail "$component_label: SHA256 mismatch for $archive_name. Expected $expected_sha256, got $actual_sha256."
+  fi
+
+  info "$component_label: checksum verification passed."
+}
+
+resolve_release_tag() {
+  owner="$1"
+  repo="$2"
+  metadata_url="https://api.github.com/repos/${owner}/${repo}/releases/latest"
+
+  latest_tag="$(curl -fsSL "$metadata_url" | awk -F '"' '/"tag_name"[[:space:]]*:/ { print $4; exit }')"
+  if [ -z "$latest_tag" ]; then
+    fail "Unable to resolve latest release tag from ${metadata_url}. Set FLOWLAYER_VERSION explicitly."
+  fi
+
+  case "$latest_tag" in
+    v*)
+      printf '%s\n' "$latest_tag"
+      ;;
+    *)
+      printf 'v%s\n' "$latest_tag"
+      ;;
+  esac
+}
+
+normalize_tag_to_version() {
+  raw_tag="$1"
+  case "$raw_tag" in
+    v*)
+      printf '%s\n' "${raw_tag#v}"
+      ;;
+    *)
+      printf '%s\n' "$raw_tag"
+      ;;
+  esac
+}
+
 require_cmd uname
 require_cmd curl
 require_cmd tar
 require_cmd mktemp
 require_cmd find
 require_cmd id
+require_cmd awk
+require_cmd head
 
+FLOWLAYER_VERSION="${FLOWLAYER_VERSION:-latest}"
 FLOWLAYER_OWNER="${FLOWLAYER_OWNER:-FlowLayer}"
 FLOWLAYER_REPO="${FLOWLAYER_REPO:-flowlayer}"
-FLOWLAYER_VERSION="${FLOWLAYER_VERSION:-latest}"
+
+FLOWLAYER_SERVER_OWNER="${FLOWLAYER_SERVER_OWNER:-$FLOWLAYER_OWNER}"
+FLOWLAYER_SERVER_REPO="${FLOWLAYER_SERVER_REPO:-$FLOWLAYER_REPO}"
+FLOWLAYER_TUI_OWNER="${FLOWLAYER_TUI_OWNER:-FlowLayer}"
+FLOWLAYER_TUI_REPO="${FLOWLAYER_TUI_REPO:-tui}"
 
 OS="$(normalize_os)"
 ARCH="$(normalize_arch)"
+ASSET_OS="$(asset_os "$OS")"
 
 if [ "$OS" = "windows" ]; then
   fail "install.sh does not support Windows. Use Winget, Scoop, or Chocolatey on Windows."
 fi
 
 if [ "$FLOWLAYER_VERSION" = "latest" ]; then
-  RELEASE_TAG='latest'
-  RELEASE_BASE_URL="https://github.com/${FLOWLAYER_OWNER}/${FLOWLAYER_REPO}/releases/latest/download"
+  RELEASE_TAG="$(resolve_release_tag "$FLOWLAYER_SERVER_OWNER" "$FLOWLAYER_SERVER_REPO")"
+  VERSION="$(normalize_tag_to_version "$RELEASE_TAG")"
+  info "Resolved latest release tag: ${RELEASE_TAG}"
 else
   case "$FLOWLAYER_VERSION" in
     v*)
@@ -87,13 +215,20 @@ else
       RELEASE_TAG="v${FLOWLAYER_VERSION}"
       ;;
   esac
-  RELEASE_BASE_URL="https://github.com/${FLOWLAYER_OWNER}/${FLOWLAYER_REPO}/releases/download/${RELEASE_TAG}"
+  VERSION="$(normalize_tag_to_version "$RELEASE_TAG")"
 fi
 
-# TODO: Align archive naming with the exact names used in published GitHub Releases.
-ARCHIVE_NAME="flowlayer_${OS}_${ARCH}.tar.gz"
-ARCHIVE_URL="${RELEASE_BASE_URL}/${ARCHIVE_NAME}"
-SHA256SUMS_URL="${RELEASE_BASE_URL}/SHA256SUMS"
+SERVER_RELEASE_BASE_URL="https://github.com/${FLOWLAYER_SERVER_OWNER}/${FLOWLAYER_SERVER_REPO}/releases/download/${RELEASE_TAG}"
+TUI_RELEASE_BASE_URL="https://github.com/${FLOWLAYER_TUI_OWNER}/${FLOWLAYER_TUI_REPO}/releases/download/${RELEASE_TAG}"
+
+SERVER_ARCHIVE_NAME="flowlayer-server-${VERSION}-${ASSET_OS}-${ARCH}.tar.gz"
+TUI_ARCHIVE_NAME="flowlayer-client-tui-${VERSION}-${ASSET_OS}-${ARCH}.tar.gz"
+
+SERVER_ARCHIVE_URL="${SERVER_RELEASE_BASE_URL}/${SERVER_ARCHIVE_NAME}"
+TUI_ARCHIVE_URL="${TUI_RELEASE_BASE_URL}/${TUI_ARCHIVE_NAME}"
+
+SERVER_SHA256SUMS_URL="${SERVER_RELEASE_BASE_URL}/SHA256SUMS"
+TUI_SHA256SUMS_URL="${TUI_RELEASE_BASE_URL}/SHA256SUMS"
 
 if [ -n "${FLOWLAYER_INSTALL_DIR:-}" ]; then
   INSTALL_DIR="$FLOWLAYER_INSTALL_DIR"
@@ -114,52 +249,55 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-ARCHIVE_PATH="${TMP_DIR}/${ARCHIVE_NAME}"
-SHA256SUMS_PATH="${TMP_DIR}/SHA256SUMS"
-EXTRACT_DIR="${TMP_DIR}/extract"
+SERVER_ARCHIVE_PATH="${TMP_DIR}/${SERVER_ARCHIVE_NAME}"
+TUI_ARCHIVE_PATH="${TMP_DIR}/${TUI_ARCHIVE_NAME}"
+SERVER_SHA256SUMS_PATH="${TMP_DIR}/server.SHA256SUMS"
+TUI_SHA256SUMS_PATH="${TMP_DIR}/tui.SHA256SUMS"
+SERVER_EXTRACT_DIR="${TMP_DIR}/server-extract"
+TUI_EXTRACT_DIR="${TMP_DIR}/tui-extract"
 
-mkdir -p "$EXTRACT_DIR"
+mkdir -p "$SERVER_EXTRACT_DIR" "$TUI_EXTRACT_DIR"
 
-info "Downloading FlowLayer archive: ${ARCHIVE_URL}"
-if ! curl -fL "$ARCHIVE_URL" -o "$ARCHIVE_PATH"; then
-  fail "Download failed. URL may not exist yet (placeholder or unreleased artifact): ${ARCHIVE_URL}"
+info "Downloading FlowLayer server archive: ${SERVER_ARCHIVE_URL}"
+if ! curl -fL "$SERVER_ARCHIVE_URL" -o "$SERVER_ARCHIVE_PATH"; then
+  fail "Server download failed. URL may not exist yet: ${SERVER_ARCHIVE_URL}"
 fi
 
-if curl -fsSL "$SHA256SUMS_URL" -o "$SHA256SUMS_PATH"; then
-  info 'SHA256SUMS downloaded. Verifying archive checksum.'
+info "Downloading FlowLayer TUI archive: ${TUI_ARCHIVE_URL}"
+if ! curl -fL "$TUI_ARCHIVE_URL" -o "$TUI_ARCHIVE_PATH"; then
+  fail "TUI download failed. URL may not exist yet: ${TUI_ARCHIVE_URL}"
+fi
 
-  EXPECTED_SHA256="$(awk -v file="$ARCHIVE_NAME" '$2 == file || $2 == "*" file { print $1; exit }' "$SHA256SUMS_PATH")"
-  if [ -z "$EXPECTED_SHA256" ]; then
-    fail "SHA256SUMS exists but has no checksum entry for ${ARCHIVE_NAME}"
-  fi
-
-  if command -v sha256sum >/dev/null 2>&1; then
-    ACTUAL_SHA256="$(sha256sum "$ARCHIVE_PATH" | awk '{print $1}')"
-  elif command -v shasum >/dev/null 2>&1; then
-    ACTUAL_SHA256="$(shasum -a 256 "$ARCHIVE_PATH" | awk '{print $1}')"
-  else
-    fail 'SHA256SUMS is available but no checksum tool found (need sha256sum or shasum).'
-  fi
-
-  if [ "$EXPECTED_SHA256" != "$ACTUAL_SHA256" ]; then
-    fail "SHA256 mismatch for ${ARCHIVE_NAME}. Expected ${EXPECTED_SHA256}, got ${ACTUAL_SHA256}."
-  fi
-
-  info 'Checksum verification passed.'
+if curl -fsSL "$SERVER_SHA256SUMS_URL" -o "$SERVER_SHA256SUMS_PATH"; then
+  info 'Server SHA256SUMS downloaded.'
 else
-  warn "SHA256SUMS is not available at ${SHA256SUMS_URL}. Skipping checksum verification."
+  warn "Server SHA256SUMS is not available at ${SERVER_SHA256SUMS_URL}."
 fi
 
-info 'Extracting archive.'
-if ! tar -xzf "$ARCHIVE_PATH" -C "$EXTRACT_DIR"; then
-  fail "Failed to extract archive: ${ARCHIVE_PATH}"
+if curl -fsSL "$TUI_SHA256SUMS_URL" -o "$TUI_SHA256SUMS_PATH"; then
+  info 'TUI SHA256SUMS downloaded.'
+else
+  warn "TUI SHA256SUMS is not available at ${TUI_SHA256SUMS_URL}."
 fi
 
-SERVER_BIN="$(find "$EXTRACT_DIR" -type f -name 'flowlayer-server' | head -n 1 || true)"
-CLIENT_BIN="$(find "$EXTRACT_DIR" -type f -name 'flowlayer-client-tui' | head -n 1 || true)"
+verify_archive_checksum "$SERVER_ARCHIVE_PATH" "$SERVER_SHA256SUMS_PATH" "$SERVER_ARCHIVE_NAME" 'server'
+verify_archive_checksum "$TUI_ARCHIVE_PATH" "$TUI_SHA256SUMS_PATH" "$TUI_ARCHIVE_NAME" 'tui'
+
+info 'Extracting server archive.'
+if ! tar -xzf "$SERVER_ARCHIVE_PATH" -C "$SERVER_EXTRACT_DIR"; then
+  fail "Failed to extract server archive: ${SERVER_ARCHIVE_PATH}"
+fi
+
+info 'Extracting TUI archive.'
+if ! tar -xzf "$TUI_ARCHIVE_PATH" -C "$TUI_EXTRACT_DIR"; then
+  fail "Failed to extract TUI archive: ${TUI_ARCHIVE_PATH}"
+fi
+
+SERVER_BIN="$(find "$SERVER_EXTRACT_DIR" -type f -name 'flowlayer-server' | head -n 1 || true)"
+CLIENT_BIN="$(find "$TUI_EXTRACT_DIR" -type f -name 'flowlayer-client-tui' | head -n 1 || true)"
 
 if [ -z "$SERVER_BIN" ] || [ -z "$CLIENT_BIN" ]; then
-  fail 'Required binaries not found after extraction (flowlayer-server, flowlayer-client-tui).'
+  fail 'Required binaries not found after extraction (flowlayer-server from server archive and flowlayer-client-tui from TUI archive).'
 fi
 
 mkdir -p "$INSTALL_DIR"

@@ -10,8 +10,8 @@
     <licenseUrl>https://flowlayer.tech/TODO-VERIFY-LICENSE</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>FlowLayer local process orchestration for development workflows.</summary>
-    <description>FlowLayer package for flowlayer-server and flowlayer-client-tui. Generated for release v1.0.0. Replace placeholder metadata and checksums before publication.</description>
-    <releaseNotes>Windows amd64 URL: https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer_windows_amd64.zip | SHA256: REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS. Windows arm64 URL: https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer_windows_arm64.zip | SHA256: REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS.</releaseNotes>
+    <description>FlowLayer package for flowlayer-server and flowlayer-client-tui. Generated for release v1.0.0 from two sources: server artifacts from FlowLayer/flowlayer and TUI artifacts from FlowLayer/tui.</description>
+    <releaseNotes>Server amd64 URL: https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-server-1.0.0-windows-amd64.zip | SHA256: a0e64c9d68cff7c27809aca06572ebf938b8b76e9ef292513c381814bac2fc75. Server arm64 URL: https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-server-1.0.0-windows-arm64.zip | SHA256: d6148c91d249f11c74bf030c0d4d1d53e00b177f11cbb00b50f2b38dfe29e929. TUI amd64 URL: https://github.com/FlowLayer/tui/releases/download/v1.0.0/flowlayer-client-tui-1.0.0-windows-amd64.zip | SHA256: 3fc0111b57d82d1d2c1883842c17f9d22fab7d1dad927104e72521068b41392b. TUI arm64 URL: https://github.com/FlowLayer/tui/releases/download/v1.0.0/flowlayer-client-tui-1.0.0-windows-arm64.zip | SHA256: 378ad56a46266bf87d74946f34aa239bad4c546404ca78acd8c8478ffb3dd19c.</releaseNotes>
     <tags>flowlayer cli orchestration development</tags>
   </metadata>
 </package>

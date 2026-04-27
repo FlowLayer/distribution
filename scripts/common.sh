@@ -35,9 +35,85 @@ normalize_release_tag() {
   fi
 }
 
+SHA256_PLACEHOLDER='REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS'
+
+get_sha256_from_sums() {
+  local sums_file="$1"
+  local asset_name="$2"
+
+  [[ -f "${sums_file}" ]] || return 1
+
+  awk -v target="${asset_name}" '
+{
+  hash = $1
+  if (length(hash) != 64 || hash !~ /^[0-9A-Fa-f]+$/) {
+    next
+  }
+
+  file_path = $0
+  sub(/^[0-9A-Fa-f]+[[:space:]]+/, "", file_path)
+  sub(/^\*/, "", file_path)
+  sub(/^\.\/+/, "", file_path)
+
+  part_count = split(file_path, path_parts, "/")
+  basename = path_parts[part_count]
+  if (file_path == target || basename == target) {
+    print tolower(hash)
+    found = 1
+    exit
+  }
+}
+
+END {
+  if (!found) {
+    exit 1
+  }
+}
+' "${sums_file}"
+}
+
+resolve_asset_sha256() {
+  local sums_file="$1"
+  local asset_name="$2"
+  local var_label="$3"
+  local sha256
+
+  if [[ ! -f "${sums_file}" ]]; then
+    warn "${var_label}: SHA256SUMS not found at ${sums_file}; using placeholder."
+    printf '%s\n' "${SHA256_PLACEHOLDER}"
+    return 0
+  fi
+
+  if sha256="$(get_sha256_from_sums "${sums_file}" "${asset_name}")"; then
+    printf '%s\n' "${sha256}"
+    return 0
+  fi
+
+  warn "${var_label}: checksum missing for ${asset_name} in ${sums_file}; using placeholder."
+  printf '%s\n' "${SHA256_PLACEHOLDER}"
+}
+
+set_sha256_var_from_sums() {
+  local var_name="$1"
+  local sums_file="$2"
+  local asset_name="$3"
+  local var_label="$4"
+  local current_value="${!var_name:-}"
+
+  if [[ -n "${current_value}" && "${current_value}" != "${SHA256_PLACEHOLDER}" ]]; then
+    return 0
+  fi
+
+  printf -v "${var_name}" '%s' "$(resolve_asset_sha256 "${sums_file}" "${asset_name}" "${var_label}")"
+}
+
 prepare_release_context() {
   local version_input="${1:-${VERSION:-0.0.0}}"
   local tag_input="${2:-${RELEASE_TAG:-${version_input}}}"
+  local server_base_url
+  local tui_base_url
+  local server_sums_file
+  local tui_sums_file
 
   VERSION="$(normalize_version "${version_input}")"
   RELEASE_TAG="$(normalize_release_tag "${tag_input}")"
@@ -45,27 +121,96 @@ prepare_release_context() {
   : "${FLOWLAYER_OWNER:=FlowLayer}"
   : "${FLOWLAYER_REPO:=flowlayer}"
 
-  local base_url="https://github.com/${FLOWLAYER_OWNER}/${FLOWLAYER_REPO}/releases/download/${RELEASE_TAG}"
+  : "${FLOWLAYER_SERVER_OWNER:=${FLOWLAYER_OWNER}}"
+  : "${FLOWLAYER_SERVER_REPO:=${FLOWLAYER_REPO}}"
+  : "${FLOWLAYER_TUI_OWNER:=FlowLayer}"
+  : "${FLOWLAYER_TUI_REPO:=tui}"
 
-  : "${DARWIN_AMD64_URL:=${base_url}/flowlayer_darwin_amd64.tar.gz}"
-  : "${DARWIN_AMD64_SHA256:=REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS}"
+  : "${FLOWLAYER_SERVER_DIST_DIR:=/workspace/server/dist}"
+  : "${FLOWLAYER_TUI_DIST_DIR:=/workspace/tui/dist}"
 
-  : "${DARWIN_ARM64_URL:=${base_url}/flowlayer_darwin_arm64.tar.gz}"
-  : "${DARWIN_ARM64_SHA256:=REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS}"
+  server_base_url="https://github.com/${FLOWLAYER_SERVER_OWNER}/${FLOWLAYER_SERVER_REPO}/releases/download/${RELEASE_TAG}"
+  tui_base_url="https://github.com/${FLOWLAYER_TUI_OWNER}/${FLOWLAYER_TUI_REPO}/releases/download/${RELEASE_TAG}"
 
-  : "${LINUX_AMD64_URL:=${base_url}/flowlayer_linux_amd64.tar.gz}"
-  : "${LINUX_AMD64_SHA256:=REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS}"
+  : "${SERVER_LINUX_AMD64_ASSET:=flowlayer-server-${VERSION}-linux-amd64.tar.gz}"
+  : "${SERVER_LINUX_ARM64_ASSET:=flowlayer-server-${VERSION}-linux-arm64.tar.gz}"
+  : "${SERVER_DARWIN_AMD64_ASSET:=flowlayer-server-${VERSION}-macos-amd64.tar.gz}"
+  : "${SERVER_DARWIN_ARM64_ASSET:=flowlayer-server-${VERSION}-macos-arm64.tar.gz}"
+  : "${SERVER_WINDOWS_AMD64_ASSET:=flowlayer-server-${VERSION}-windows-amd64.zip}"
+  : "${SERVER_WINDOWS_ARM64_ASSET:=flowlayer-server-${VERSION}-windows-arm64.zip}"
 
-  : "${LINUX_ARM64_URL:=${base_url}/flowlayer_linux_arm64.tar.gz}"
-  : "${LINUX_ARM64_SHA256:=REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS}"
+  : "${TUI_LINUX_AMD64_ASSET:=flowlayer-client-tui-${VERSION}-linux-amd64.tar.gz}"
+  : "${TUI_LINUX_ARM64_ASSET:=flowlayer-client-tui-${VERSION}-linux-arm64.tar.gz}"
+  : "${TUI_DARWIN_AMD64_ASSET:=flowlayer-client-tui-${VERSION}-macos-amd64.tar.gz}"
+  : "${TUI_DARWIN_ARM64_ASSET:=flowlayer-client-tui-${VERSION}-macos-arm64.tar.gz}"
+  : "${TUI_WINDOWS_AMD64_ASSET:=flowlayer-client-tui-${VERSION}-windows-amd64.zip}"
+  : "${TUI_WINDOWS_ARM64_ASSET:=flowlayer-client-tui-${VERSION}-windows-arm64.zip}"
 
-  : "${WINDOWS_AMD64_URL:=${base_url}/flowlayer_windows_amd64.zip}"
-  : "${WINDOWS_AMD64_SHA256:=REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS}"
+  : "${SERVER_LINUX_AMD64_URL:=${server_base_url}/${SERVER_LINUX_AMD64_ASSET}}"
+  : "${SERVER_LINUX_ARM64_URL:=${server_base_url}/${SERVER_LINUX_ARM64_ASSET}}"
+  : "${SERVER_DARWIN_AMD64_URL:=${server_base_url}/${SERVER_DARWIN_AMD64_ASSET}}"
+  : "${SERVER_DARWIN_ARM64_URL:=${server_base_url}/${SERVER_DARWIN_ARM64_ASSET}}"
+  : "${SERVER_WINDOWS_AMD64_URL:=${server_base_url}/${SERVER_WINDOWS_AMD64_ASSET}}"
+  : "${SERVER_WINDOWS_ARM64_URL:=${server_base_url}/${SERVER_WINDOWS_ARM64_ASSET}}"
 
-  : "${WINDOWS_ARM64_URL:=${base_url}/flowlayer_windows_arm64.zip}"
-  : "${WINDOWS_ARM64_SHA256:=REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS}"
+  : "${TUI_LINUX_AMD64_URL:=${tui_base_url}/${TUI_LINUX_AMD64_ASSET}}"
+  : "${TUI_LINUX_ARM64_URL:=${tui_base_url}/${TUI_LINUX_ARM64_ASSET}}"
+  : "${TUI_DARWIN_AMD64_URL:=${tui_base_url}/${TUI_DARWIN_AMD64_ASSET}}"
+  : "${TUI_DARWIN_ARM64_URL:=${tui_base_url}/${TUI_DARWIN_ARM64_ASSET}}"
+  : "${TUI_WINDOWS_AMD64_URL:=${tui_base_url}/${TUI_WINDOWS_AMD64_ASSET}}"
+  : "${TUI_WINDOWS_ARM64_URL:=${tui_base_url}/${TUI_WINDOWS_ARM64_ASSET}}"
 
-  export VERSION RELEASE_TAG FLOWLAYER_OWNER FLOWLAYER_REPO
+  server_sums_file="${FLOWLAYER_SERVER_DIST_DIR}/SHA256SUMS"
+  tui_sums_file="${FLOWLAYER_TUI_DIST_DIR}/SHA256SUMS"
+
+  set_sha256_var_from_sums 'SERVER_LINUX_AMD64_SHA256' "${server_sums_file}" "${SERVER_LINUX_AMD64_ASSET}" 'SERVER_LINUX_AMD64_SHA256'
+  set_sha256_var_from_sums 'SERVER_LINUX_ARM64_SHA256' "${server_sums_file}" "${SERVER_LINUX_ARM64_ASSET}" 'SERVER_LINUX_ARM64_SHA256'
+  set_sha256_var_from_sums 'SERVER_DARWIN_AMD64_SHA256' "${server_sums_file}" "${SERVER_DARWIN_AMD64_ASSET}" 'SERVER_DARWIN_AMD64_SHA256'
+  set_sha256_var_from_sums 'SERVER_DARWIN_ARM64_SHA256' "${server_sums_file}" "${SERVER_DARWIN_ARM64_ASSET}" 'SERVER_DARWIN_ARM64_SHA256'
+  set_sha256_var_from_sums 'SERVER_WINDOWS_AMD64_SHA256' "${server_sums_file}" "${SERVER_WINDOWS_AMD64_ASSET}" 'SERVER_WINDOWS_AMD64_SHA256'
+  set_sha256_var_from_sums 'SERVER_WINDOWS_ARM64_SHA256' "${server_sums_file}" "${SERVER_WINDOWS_ARM64_ASSET}" 'SERVER_WINDOWS_ARM64_SHA256'
+
+  set_sha256_var_from_sums 'TUI_LINUX_AMD64_SHA256' "${tui_sums_file}" "${TUI_LINUX_AMD64_ASSET}" 'TUI_LINUX_AMD64_SHA256'
+  set_sha256_var_from_sums 'TUI_LINUX_ARM64_SHA256' "${tui_sums_file}" "${TUI_LINUX_ARM64_ASSET}" 'TUI_LINUX_ARM64_SHA256'
+  set_sha256_var_from_sums 'TUI_DARWIN_AMD64_SHA256' "${tui_sums_file}" "${TUI_DARWIN_AMD64_ASSET}" 'TUI_DARWIN_AMD64_SHA256'
+  set_sha256_var_from_sums 'TUI_DARWIN_ARM64_SHA256' "${tui_sums_file}" "${TUI_DARWIN_ARM64_ASSET}" 'TUI_DARWIN_ARM64_SHA256'
+  set_sha256_var_from_sums 'TUI_WINDOWS_AMD64_SHA256' "${tui_sums_file}" "${TUI_WINDOWS_AMD64_ASSET}" 'TUI_WINDOWS_AMD64_SHA256'
+  set_sha256_var_from_sums 'TUI_WINDOWS_ARM64_SHA256' "${tui_sums_file}" "${TUI_WINDOWS_ARM64_ASSET}" 'TUI_WINDOWS_ARM64_SHA256'
+
+  # Backward-compatible aliases kept for templates/scripts still using old variable names.
+  : "${DARWIN_AMD64_URL:=${SERVER_DARWIN_AMD64_URL}}"
+  : "${DARWIN_AMD64_SHA256:=${SERVER_DARWIN_AMD64_SHA256}}"
+  : "${DARWIN_ARM64_URL:=${SERVER_DARWIN_ARM64_URL}}"
+  : "${DARWIN_ARM64_SHA256:=${SERVER_DARWIN_ARM64_SHA256}}"
+  : "${LINUX_AMD64_URL:=${SERVER_LINUX_AMD64_URL}}"
+  : "${LINUX_AMD64_SHA256:=${SERVER_LINUX_AMD64_SHA256}}"
+  : "${LINUX_ARM64_URL:=${SERVER_LINUX_ARM64_URL}}"
+  : "${LINUX_ARM64_SHA256:=${SERVER_LINUX_ARM64_SHA256}}"
+  : "${WINDOWS_AMD64_URL:=${SERVER_WINDOWS_AMD64_URL}}"
+  : "${WINDOWS_AMD64_SHA256:=${SERVER_WINDOWS_AMD64_SHA256}}"
+  : "${WINDOWS_ARM64_URL:=${SERVER_WINDOWS_ARM64_URL}}"
+  : "${WINDOWS_ARM64_SHA256:=${SERVER_WINDOWS_ARM64_SHA256}}"
+
+  export VERSION RELEASE_TAG
+  export FLOWLAYER_OWNER FLOWLAYER_REPO
+  export FLOWLAYER_SERVER_OWNER FLOWLAYER_SERVER_REPO
+  export FLOWLAYER_TUI_OWNER FLOWLAYER_TUI_REPO
+  export FLOWLAYER_SERVER_DIST_DIR FLOWLAYER_TUI_DIST_DIR
+
+  export SERVER_LINUX_AMD64_URL SERVER_LINUX_AMD64_SHA256
+  export SERVER_LINUX_ARM64_URL SERVER_LINUX_ARM64_SHA256
+  export SERVER_DARWIN_AMD64_URL SERVER_DARWIN_AMD64_SHA256
+  export SERVER_DARWIN_ARM64_URL SERVER_DARWIN_ARM64_SHA256
+  export SERVER_WINDOWS_AMD64_URL SERVER_WINDOWS_AMD64_SHA256
+  export SERVER_WINDOWS_ARM64_URL SERVER_WINDOWS_ARM64_SHA256
+
+  export TUI_LINUX_AMD64_URL TUI_LINUX_AMD64_SHA256
+  export TUI_LINUX_ARM64_URL TUI_LINUX_ARM64_SHA256
+  export TUI_DARWIN_AMD64_URL TUI_DARWIN_AMD64_SHA256
+  export TUI_DARWIN_ARM64_URL TUI_DARWIN_ARM64_SHA256
+  export TUI_WINDOWS_AMD64_URL TUI_WINDOWS_AMD64_SHA256
+  export TUI_WINDOWS_ARM64_URL TUI_WINDOWS_ARM64_SHA256
+
   export DARWIN_AMD64_URL DARWIN_AMD64_SHA256
   export DARWIN_ARM64_URL DARWIN_ARM64_SHA256
   export LINUX_AMD64_URL LINUX_AMD64_SHA256
@@ -77,26 +222,16 @@ prepare_release_context() {
 render_template() {
   local template_path="$1"
   local output_path="$2"
+  local token_list
 
   if ! command -v awk >/dev/null 2>&1; then
     fail 'awk is required to render templates.'
   fi
 
+  token_list='VERSION RELEASE_TAG FLOWLAYER_OWNER FLOWLAYER_REPO FLOWLAYER_SERVER_OWNER FLOWLAYER_SERVER_REPO FLOWLAYER_TUI_OWNER FLOWLAYER_TUI_REPO SERVER_DARWIN_AMD64_URL SERVER_DARWIN_AMD64_SHA256 SERVER_DARWIN_ARM64_URL SERVER_DARWIN_ARM64_SHA256 SERVER_LINUX_AMD64_URL SERVER_LINUX_AMD64_SHA256 SERVER_LINUX_ARM64_URL SERVER_LINUX_ARM64_SHA256 SERVER_WINDOWS_AMD64_URL SERVER_WINDOWS_AMD64_SHA256 SERVER_WINDOWS_ARM64_URL SERVER_WINDOWS_ARM64_SHA256 TUI_DARWIN_AMD64_URL TUI_DARWIN_AMD64_SHA256 TUI_DARWIN_ARM64_URL TUI_DARWIN_ARM64_SHA256 TUI_LINUX_AMD64_URL TUI_LINUX_AMD64_SHA256 TUI_LINUX_ARM64_URL TUI_LINUX_ARM64_SHA256 TUI_WINDOWS_AMD64_URL TUI_WINDOWS_AMD64_SHA256 TUI_WINDOWS_ARM64_URL TUI_WINDOWS_ARM64_SHA256 DARWIN_AMD64_URL DARWIN_AMD64_SHA256 DARWIN_ARM64_URL DARWIN_ARM64_SHA256 LINUX_AMD64_URL LINUX_AMD64_SHA256 LINUX_ARM64_URL LINUX_ARM64_SHA256 WINDOWS_AMD64_URL WINDOWS_AMD64_SHA256 WINDOWS_ARM64_URL WINDOWS_ARM64_SHA256'
+
   awk \
-    -v VERSION="${VERSION}" \
-    -v RELEASE_TAG="${RELEASE_TAG}" \
-    -v DARWIN_AMD64_URL="${DARWIN_AMD64_URL}" \
-    -v DARWIN_AMD64_SHA256="${DARWIN_AMD64_SHA256}" \
-    -v DARWIN_ARM64_URL="${DARWIN_ARM64_URL}" \
-    -v DARWIN_ARM64_SHA256="${DARWIN_ARM64_SHA256}" \
-    -v LINUX_AMD64_URL="${LINUX_AMD64_URL}" \
-    -v LINUX_AMD64_SHA256="${LINUX_AMD64_SHA256}" \
-    -v LINUX_ARM64_URL="${LINUX_ARM64_URL}" \
-    -v LINUX_ARM64_SHA256="${LINUX_ARM64_SHA256}" \
-    -v WINDOWS_AMD64_URL="${WINDOWS_AMD64_URL}" \
-    -v WINDOWS_AMD64_SHA256="${WINDOWS_AMD64_SHA256}" \
-    -v WINDOWS_ARM64_URL="${WINDOWS_ARM64_URL}" \
-    -v WINDOWS_ARM64_SHA256="${WINDOWS_ARM64_SHA256}" \
+    -v TOKENS="${token_list}" \
     '
 function escape_replacement(value, escaped) {
   escaped = value
@@ -107,51 +242,26 @@ function escape_replacement(value, escaped) {
 }
 
 BEGIN {
-  VERSION_ESC = escape_replacement(VERSION)
-  RELEASE_TAG_ESC = escape_replacement(RELEASE_TAG)
-
-  DARWIN_AMD64_URL_ESC = escape_replacement(DARWIN_AMD64_URL)
-  DARWIN_AMD64_SHA256_ESC = escape_replacement(DARWIN_AMD64_SHA256)
-
-  DARWIN_ARM64_URL_ESC = escape_replacement(DARWIN_ARM64_URL)
-  DARWIN_ARM64_SHA256_ESC = escape_replacement(DARWIN_ARM64_SHA256)
-
-  LINUX_AMD64_URL_ESC = escape_replacement(LINUX_AMD64_URL)
-  LINUX_AMD64_SHA256_ESC = escape_replacement(LINUX_AMD64_SHA256)
-
-  LINUX_ARM64_URL_ESC = escape_replacement(LINUX_ARM64_URL)
-  LINUX_ARM64_SHA256_ESC = escape_replacement(LINUX_ARM64_SHA256)
-
-  WINDOWS_AMD64_URL_ESC = escape_replacement(WINDOWS_AMD64_URL)
-  WINDOWS_AMD64_SHA256_ESC = escape_replacement(WINDOWS_AMD64_SHA256)
-
-  WINDOWS_ARM64_URL_ESC = escape_replacement(WINDOWS_ARM64_URL)
-  WINDOWS_ARM64_SHA256_ESC = escape_replacement(WINDOWS_ARM64_SHA256)
+  token_count = split(TOKENS, tokens, /[[:space:]]+/)
+  for (idx = 1; idx <= token_count; idx++) {
+    key = tokens[idx]
+    if (key == "") {
+      continue
+    }
+    replacements[key] = escape_replacement(ENVIRON[key])
+  }
 }
 
 {
-  gsub(/\{\{VERSION\}\}/, VERSION_ESC)
-  gsub(/\{\{RELEASE_TAG\}\}/, RELEASE_TAG_ESC)
-
-  gsub(/\{\{DARWIN_AMD64_URL\}\}/, DARWIN_AMD64_URL_ESC)
-  gsub(/\{\{DARWIN_AMD64_SHA256\}\}/, DARWIN_AMD64_SHA256_ESC)
-
-  gsub(/\{\{DARWIN_ARM64_URL\}\}/, DARWIN_ARM64_URL_ESC)
-  gsub(/\{\{DARWIN_ARM64_SHA256\}\}/, DARWIN_ARM64_SHA256_ESC)
-
-  gsub(/\{\{LINUX_AMD64_URL\}\}/, LINUX_AMD64_URL_ESC)
-  gsub(/\{\{LINUX_AMD64_SHA256\}\}/, LINUX_AMD64_SHA256_ESC)
-
-  gsub(/\{\{LINUX_ARM64_URL\}\}/, LINUX_ARM64_URL_ESC)
-  gsub(/\{\{LINUX_ARM64_SHA256\}\}/, LINUX_ARM64_SHA256_ESC)
-
-  gsub(/\{\{WINDOWS_AMD64_URL\}\}/, WINDOWS_AMD64_URL_ESC)
-  gsub(/\{\{WINDOWS_AMD64_SHA256\}\}/, WINDOWS_AMD64_SHA256_ESC)
-
-  gsub(/\{\{WINDOWS_ARM64_URL\}\}/, WINDOWS_ARM64_URL_ESC)
-  gsub(/\{\{WINDOWS_ARM64_SHA256\}\}/, WINDOWS_ARM64_SHA256_ESC)
-
-  print
+  line = $0
+  for (idx = 1; idx <= token_count; idx++) {
+    key = tokens[idx]
+    if (key == "") {
+      continue
+    }
+    gsub("\\{\\{" key "\\}\\}", replacements[key], line)
+  }
+  print line
 }
 ' "${template_path}" > "${output_path}.tmp"
 
