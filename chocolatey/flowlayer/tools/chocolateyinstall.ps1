@@ -21,21 +21,14 @@ $tuiChecksumArm64 = '6a094841a161ea8f827693859834e769ed2442d85a4e00178c6aee4d573
 
 $isArm64 = ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') -or ($env:PROCESSOR_ARCHITEW6432 -eq 'ARM64')
 
-function Assert-Sha256 {
+function Assert-ConcreteSha256 {
   param(
-    [Parameter(Mandatory = $true)][string]$FilePath,
     [Parameter(Mandatory = $true)][string]$Expected,
     [Parameter(Mandatory = $true)][string]$Label
   )
 
   if ($Expected -eq $checksumPlaceholder) {
-    Write-Warning "$Label checksum placeholder detected; verification skipped."
-    return
-  }
-
-  $actual = (Get-FileHash -Path $FilePath -Algorithm SHA256).Hash.ToLowerInvariant()
-  if ($actual -ne $Expected.ToLowerInvariant()) {
-    throw "$Label checksum mismatch. Expected $Expected, got $actual."
+    throw "$Label checksum placeholder detected; package must be generated with concrete SHA256 values."
   }
 }
 
@@ -60,11 +53,11 @@ try {
   $serverExtract = Join-Path $tempDir 'server-extract'
   $tuiExtract = Join-Path $tempDir 'tui-extract'
 
-  Get-ChocolateyWebFile -PackageName $packageName -FileFullPath $serverZip -Url $serverUrl | Out-Null
-  Get-ChocolateyWebFile -PackageName $packageName -FileFullPath $tuiZip -Url $tuiUrl | Out-Null
+  Assert-ConcreteSha256 -Expected $serverChecksum -Label 'server archive'
+  Assert-ConcreteSha256 -Expected $tuiChecksum -Label 'tui archive'
 
-  Assert-Sha256 -FilePath $serverZip -Expected $serverChecksum -Label 'server archive'
-  Assert-Sha256 -FilePath $tuiZip -Expected $tuiChecksum -Label 'tui archive'
+  Get-ChocolateyWebFile -PackageName $packageName -FileFullPath $serverZip -Url $serverUrl -Checksum $serverChecksum -ChecksumType 'sha256' | Out-Null
+  Get-ChocolateyWebFile -PackageName $packageName -FileFullPath $tuiZip -Url $tuiUrl -Checksum $tuiChecksum -ChecksumType 'sha256' | Out-Null
 
   Expand-Archive -Path $serverZip -DestinationPath $serverExtract -Force
   Expand-Archive -Path $tuiZip -DestinationPath $tuiExtract -Force
