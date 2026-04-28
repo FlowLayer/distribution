@@ -50,7 +50,7 @@ SERVER_DIST_DIR="${FLOWLAYER_SERVER_DIST_DIR:-/workspace/server/dist}"
 TUI_DIST_DIR="${FLOWLAYER_TUI_DIST_DIR:-/workspace/tui/dist}"
 GLOBAL_DIST_DIR="${FLOWLAYER_GLOBAL_DIST_DIR:-/workspace/dist}"
 GPG_ID="${GPG_ID:-D3372B726ED237D9780CF0F4E4A9366CF07BC7C8}"
-SIGN_RELEASE="${SIGN_RELEASE:-1}"
+SIGN_RELEASE="${SIGN_RELEASE:-0}"
 
 SERVER_DIST_DIR="$(normalize_path "${SERVER_DIST_DIR}")"
 TUI_DIST_DIR="$(normalize_path "${TUI_DIST_DIR}")"
@@ -158,9 +158,13 @@ generate_global_checksums() {
 }
 
 sign_release_files() {
+  local sig_path="${GLOBAL_DIST_DIR}/SHA256SUMS.sig"
+
   require_command gpg
   require_file /gpg/private.asc
   require_file /gpg/public.asc
+
+  rm -f "${sig_path}"
 
   gpg_home="$(mktemp -d "${TMPDIR:-/tmp}/flowlayer-global-gpg.XXXXXX")"
   chmod 700 "${gpg_home}"
@@ -168,13 +172,16 @@ sign_release_files() {
   GNUPGHOME="${gpg_home}" gpg --batch --import /gpg/private.asc
   GNUPGHOME="${gpg_home}" gpg --batch --import /gpg/public.asc
 
-  GNUPGHOME="${gpg_home}" gpg \
+  if ! GNUPGHOME="${gpg_home}" gpg \
     --batch \
     --yes \
     --pinentry-mode loopback \
     --local-user "${GPG_ID}" \
-    --output "${GLOBAL_DIST_DIR}/SHA256SUMS.sig" \
-    --detach-sign "${GLOBAL_DIST_DIR}/SHA256SUMS"
+    --output "${sig_path}" \
+    --detach-sign "${GLOBAL_DIST_DIR}/SHA256SUMS"; then
+    rm -f "${sig_path}"
+    fail "GPG signing failed for ${GLOBAL_DIST_DIR}/SHA256SUMS; removed partial signature file"
+  fi
 
   GNUPGHOME="${gpg_home}" gpg \
     --batch \
