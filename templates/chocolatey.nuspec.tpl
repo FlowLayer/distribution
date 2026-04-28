@@ -7,6 +7,10 @@
     <authors>FlowLayer</authors>
     <owners>FlowLayer</owners>
     <projectUrl>https://flowlayer.tech</projectUrl>
+    <packageSourceUrl>https://github.com/FlowLayer/distribution</packageSourceUrl>
+    <projectSourceUrl>https://github.com/FlowLayer/flowlayer</projectSourceUrl>
+    <docsUrl>https://flowlayer.tech</docsUrl>
+    <bugTrackerUrl>https://github.com/FlowLayer/flowlayer/issues</bugTrackerUrl>
     <licenseUrl>https://flowlayer.tech/Proprietary</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>FlowLayer local process orchestration for development workflows.</summary>
