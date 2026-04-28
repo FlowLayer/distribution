@@ -1,74 +1,128 @@
 # FlowLayer Distribution
 
-This repository contains FlowLayer distribution tooling and package manager recipes.
+**Where every supported install path of FlowLayer lives — recipes, manifests, and the one-liner that gets you running.**
 
-It is a technical repository for distribution scripts, package recipes, and release-sync templates. It does not contain application source code.
+[![install.sh](https://img.shields.io/badge/install.sh-ready-4d8eff?style=flat-square)](install.sh)
+[![Homebrew](https://img.shields.io/badge/Homebrew-tap%20ready-4d8eff?style=flat-square)](#homebrew)
+[![Scoop](https://img.shields.io/badge/Scoop-bucket%20ready-4d8eff?style=flat-square)](#scoop-windows)
+[![Chocolatey](https://img.shields.io/badge/Chocolatey-pending%20moderation-orange?style=flat-square)](#chocolatey-pending)
+[![Winget](https://img.shields.io/badge/Winget-manifests%20tracked-orange?style=flat-square)](#winget-tracked)
 
-For user-facing installation instructions, see https://github.com/FlowLayer/flowlayer or https://flowlayer.tech.
+[Website](https://flowlayer.tech/) · [Main repo](https://github.com/FlowLayer/flowlayer) · [Releases](https://github.com/FlowLayer/flowlayer/releases) · [TUI source](https://github.com/FlowLayer/tui)
 
-Assets are published from the global FlowLayer release:
-https://github.com/FlowLayer/flowlayer/releases
+---
 
-The global release includes:
-- `flowlayer-server`
-- `flowlayer-client-tui`
-- global Windows bundles
-- `SHA256SUMS`
+This repository is the **packaging surface** of FlowLayer. It does not contain application source code — it contains the scripts, formula templates, and manifests that turn a tagged release of `flowlayer-server` and `flowlayer-client-tui` into something users can install on every major OS.
 
-Official documentation entry point: https://flowlayer.tech
+If you just want to **install FlowLayer**, you are in the right place. Pick your platform below.
 
-## Installation Status
+If you are looking for the engine, the protocol, or the TUI source, see:
 
-- `install.sh` public installer: validated
-- Homebrew public tap: validated
-- Scoop public bucket: validated
-- Chocolatey package has been submitted and is pending Chocolatey Community moderation
-- Winget manifests are tracked here and valid, but local install testing currently fails with a Winget internal error in the test environment
+- [FlowLayer/flowlayer](https://github.com/FlowLayer/flowlayer) — release hub, protocol, config reference
+- [FlowLayer/tui](https://github.com/FlowLayer/tui) — official terminal client source
+- [flowlayer.tech](https://flowlayer.tech/) — full documentation
 
-## Maintainer Reference: Stable Installation Methods
+---
 
-These commands are kept here for packaging and validation workflows. The main user entry point is https://github.com/FlowLayer/flowlayer.
+## Install
 
-Linux/macOS (`install.sh`):
+### Linux & macOS
+
+One curl, one shell — the canonical fast path:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/FlowLayer/distribution/main/install.sh | sh
 ```
 
-Homebrew:
+The installer detects your OS and architecture, downloads the matching binaries from the global FlowLayer release, verifies SHA-256 checksums, and drops `flowlayer-server` + `flowlayer-client-tui` into your `PATH`.
+
+### Homebrew
 
 ```sh
 brew tap FlowLayer/distribution https://github.com/FlowLayer/distribution.git
 brew install flowlayer
 ```
 
-Scoop:
+### Scoop (Windows)
 
 ```powershell
 scoop bucket add flowlayer https://github.com/FlowLayer/distribution.git
 scoop install flowlayer
 ```
 
-## Pending / Not Yet Stable
+### Chocolatey (pending)
 
-- Chocolatey package has been submitted and is pending Chocolatey Community moderation.
-- Winget manifests are tracked here, but local install testing currently fails with a Winget internal error.
+The Chocolatey package is **submitted and in Community moderation**. Once approved it will install with:
 
-## Checksum Verification
+```powershell
+choco install flowlayer
+```
 
-Download assets and `SHA256SUMS` from:
-https://github.com/FlowLayer/flowlayer/releases
+### Winget (tracked)
 
-Verify with:
+Manifests are tracked in [`winget/manifests/FlowLayer.FlowLayer/`](winget/manifests/FlowLayer.FlowLayer) and pass `winget validate`. **Local installation is currently blocked** by an upstream Winget internal error in our test matrix; once resolved, the standard `winget install FlowLayer.FlowLayer` will work.
+
+---
+
+## Verify what you downloaded
+
+Every release ships a `SHA256SUMS` file alongside the binaries. Verify before you run:
 
 ```sh
 sha256sum -c SHA256SUMS
 ```
 
-GPG verification is not published as an active distribution method at this stage.
+GPG-signed releases are not part of the distribution surface yet.
 
-## Related Repositories
+---
 
-- FlowLayer release hub: https://github.com/FlowLayer/flowlayer
-- TUI source repository: https://github.com/FlowLayer/tui
-- Distribution repository: https://github.com/FlowLayer/distribution
+## Repository layout
+
+```text
+distribution/
+├── install.sh              # canonical Linux/macOS one-liner
+├── Formula/                # Homebrew formula (legacy path)
+├── homebrew/Formula/       # Homebrew tap formula (current)
+├── scoop/bucket/           # Scoop bucket manifest
+├── chocolatey/flowlayer/   # Chocolatey nuspec + tools
+├── winget/manifests/       # Winget multi-file manifests
+├── templates/              # Source templates rendered at release-sync
+└── scripts/                # Release-sync, validation, and bundle builders
+```
+
+The recipes are **generated**, not hand-edited — every release the `scripts/release-sync.sh` pipeline rerenders the formulas, manifests, and Scoop JSON from `templates/` against the new version and freshly computed SHA-256 sums. That means every channel is **always in lockstep** with the release tag — no stale checksums, no version drift.
+
+Key scripts:
+
+| Script | Purpose |
+|---|---|
+| [`scripts/release-sync.sh`](scripts/release-sync.sh) | Master pipeline: pull release, recompute hashes, rerender every recipe |
+| [`scripts/build-winget-bundles.sh`](scripts/build-winget-bundles.sh) | Build the Windows installer bundles consumed by Winget manifests |
+| [`scripts/test-release-sync.sh`](scripts/test-release-sync.sh) | Local dry-run validation of the full pipeline |
+| [`scripts/update-{homebrew,scoop,chocolatey,winget}.sh`](scripts) | Per-channel update entry points |
+
+---
+
+## Channel status
+
+| Channel | Status | Notes |
+|---|---|---|
+| `install.sh` | ✓ Stable | OS + arch detection, checksum verification, idempotent |
+| Homebrew tap | ✓ Stable | Public tap, formula auto-synced per release |
+| Scoop bucket | ✓ Stable | Public bucket, manifest auto-synced per release |
+| Chocolatey | ⏳ In moderation | Package submitted, awaiting Community approval |
+| Winget | ⏳ Manifests tracked | Validates clean; local install blocked by upstream Winget error |
+
+---
+
+## Related repositories
+
+- **FlowLayer release hub** — <https://github.com/FlowLayer/flowlayer>
+- **TUI source** — <https://github.com/FlowLayer/tui>
+- **This repo (distribution recipes)** — <https://github.com/FlowLayer/distribution>
+
+---
+
+## License
+
+See [LICENSE](LICENSE).
