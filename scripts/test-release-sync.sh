@@ -188,7 +188,13 @@ assert_present_fixed "FlowLayer/flowlayer/releases/download/${TARGET_TAG}/flowla
 
 legacy_tui_repo_ref='FlowLayer/'
 legacy_tui_repo_ref+="tui"
-assert_absent_fixed "${legacy_tui_repo_ref}" "${SEARCH_PATHS[@]}"
+legacy_tui_releases_ref="${legacy_tui_repo_ref}"
+legacy_tui_releases_ref+="/releases"
+assert_absent_fixed "${legacy_tui_releases_ref}" "${SEARCH_PATHS[@]}"
+
+legacy_tui_releases_url='github.com/'
+legacy_tui_releases_url+="${legacy_tui_releases_ref}"
+assert_absent_fixed "${legacy_tui_releases_url}" "${SEARCH_PATHS[@]}"
 
 assert_file_contains_fixed scoop/bucket/flowlayer.json '"license": "Proprietary"'
 assert_file_contains_fixed "${WINGET_LOCALE_MANIFEST_PATH}" 'License: Proprietary'
