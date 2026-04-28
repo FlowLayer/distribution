@@ -184,8 +184,8 @@ prepare_release_context() {
 
   : "${FLOWLAYER_SERVER_OWNER:=${FLOWLAYER_OWNER}}"
   : "${FLOWLAYER_SERVER_REPO:=${FLOWLAYER_REPO}}"
-  : "${FLOWLAYER_TUI_OWNER:=FlowLayer}"
-  : "${FLOWLAYER_TUI_REPO:=tui}"
+  : "${FLOWLAYER_TUI_OWNER:=${FLOWLAYER_OWNER}}"
+  : "${FLOWLAYER_TUI_REPO:=${FLOWLAYER_REPO}}"
 
   : "${FLOWLAYER_SERVER_DIST_DIR:=/workspace/server/dist}"
   : "${FLOWLAYER_TUI_DIST_DIR:=/workspace/tui/dist}"
@@ -211,7 +211,7 @@ prepare_release_context() {
   fi
 
   server_base_url="https://github.com/${FLOWLAYER_SERVER_OWNER}/${FLOWLAYER_SERVER_REPO}/releases/download/${RELEASE_TAG}"
-  tui_base_url="https://github.com/${FLOWLAYER_TUI_OWNER}/${FLOWLAYER_TUI_REPO}/releases/download/${RELEASE_TAG}"
+  tui_base_url="https://github.com/${FLOWLAYER_OWNER}/${FLOWLAYER_REPO}/releases/download/${RELEASE_TAG}"
   winget_base_url="https://github.com/${FLOWLAYER_OWNER}/${FLOWLAYER_REPO}/releases/download/${RELEASE_TAG}"
 
   : "${SERVER_LINUX_AMD64_ASSET:=flowlayer-server-${VERSION}-linux-amd64.tar.gz}"

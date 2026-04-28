@@ -6,9 +6,7 @@ $checksumPlaceholder = 'REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS'
 $tempDir = Join-Path $env:TEMP ("flowlayer-" + [Guid]::NewGuid().ToString('N'))
 
 # Generated for release {{RELEASE_TAG}}.
-# Sources:
-# - Server: FlowLayer/flowlayer
-# - TUI: FlowLayer/tui
+# Assets are published from the global FlowLayer release: FlowLayer/flowlayer.
 $serverUrlX64 = '{{SERVER_WINDOWS_AMD64_URL}}'
 $serverChecksumX64 = '{{SERVER_WINDOWS_AMD64_SHA256}}'
 

@@ -45,19 +45,19 @@
       "64bit": {
         "url": [
           "https://github.com/FlowLayer/flowlayer/releases/download/v$version/flowlayer-server-$version-windows-amd64.zip",
-          "https://github.com/FlowLayer/tui/releases/download/v$version/flowlayer-client-tui-$version-windows-amd64.zip"
+          "https://github.com/FlowLayer/flowlayer/releases/download/v$version/flowlayer-client-tui-$version-windows-amd64.zip"
         ]
       },
       "arm64": {
         "url": [
           "https://github.com/FlowLayer/flowlayer/releases/download/v$version/flowlayer-server-$version-windows-arm64.zip",
-          "https://github.com/FlowLayer/tui/releases/download/v$version/flowlayer-client-tui-$version-windows-arm64.zip"
+          "https://github.com/FlowLayer/flowlayer/releases/download/v$version/flowlayer-client-tui-$version-windows-arm64.zip"
         ]
       }
     }
   },
   "notes": [
     "Generated for release tag {{RELEASE_TAG}}.",
-    "Dual-source package: server from FlowLayer/flowlayer and TUI from FlowLayer/tui."
+    "Assets are published from the global FlowLayer release: FlowLayer/flowlayer."
   ]
 }
