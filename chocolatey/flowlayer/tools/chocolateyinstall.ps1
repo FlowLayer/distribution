@@ -6,20 +6,18 @@ $checksumPlaceholder = 'REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS'
 $tempDir = Join-Path $env:TEMP ("flowlayer-" + [Guid]::NewGuid().ToString('N'))
 
 # Generated for release v1.0.0.
-# Sources:
-# - Server: FlowLayer/flowlayer
-# - TUI: FlowLayer/tui
+# Assets are published from the global FlowLayer release: FlowLayer/flowlayer.
 $serverUrlX64 = 'https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-server-1.0.0-windows-amd64.zip'
-$serverChecksumX64 = 'a0e64c9d68cff7c27809aca06572ebf938b8b76e9ef292513c381814bac2fc75'
+$serverChecksumX64 = '1a68fe2087657b7a85e4d9210f73f0ac0eccb83d4b672c71442d4855cdfed968'
 
 $serverUrlArm64 = 'https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-server-1.0.0-windows-arm64.zip'
-$serverChecksumArm64 = 'd6148c91d249f11c74bf030c0d4d1d53e00b177f11cbb00b50f2b38dfe29e929'
+$serverChecksumArm64 = '3ea14c4838bd9bb3d90ddb2108fe3fa45ef48446f798cfad83c64fa7f7b64507'
 
-$tuiUrlX64 = 'https://github.com/FlowLayer/tui/releases/download/v1.0.0/flowlayer-client-tui-1.0.0-windows-amd64.zip'
-$tuiChecksumX64 = '3fc0111b57d82d1d2c1883842c17f9d22fab7d1dad927104e72521068b41392b'
+$tuiUrlX64 = 'https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-client-tui-1.0.0-windows-amd64.zip'
+$tuiChecksumX64 = 'f4a12591c05f8757c014d05d5eda752ddea332ead4fe23fdb59f7ecc39158ef6'
 
-$tuiUrlArm64 = 'https://github.com/FlowLayer/tui/releases/download/v1.0.0/flowlayer-client-tui-1.0.0-windows-arm64.zip'
-$tuiChecksumArm64 = '378ad56a46266bf87d74946f34aa239bad4c546404ca78acd8c8478ffb3dd19c'
+$tuiUrlArm64 = 'https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-client-tui-1.0.0-windows-arm64.zip'
+$tuiChecksumArm64 = '6a094841a161ea8f827693859834e769ed2442d85a4e00178c6aee4d573e178c'
 
 $isArm64 = ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') -or ($env:PROCESSOR_ARCHITEW6432 -eq 'ARM64')
 

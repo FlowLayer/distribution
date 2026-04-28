@@ -129,8 +129,12 @@ assert_absent_fixed "${LEGACY_VERSION}" "${SEARCH_PATHS[@]}"
 assert_absent_fixed "${LEGACY_TAG}" "${SEARCH_PATHS[@]}"
 assert_absent_fixed "${LICENSE_TODO_TOKEN}" "${SEARCH_PATHS[@]}"
 
-assert_present_fixed "FlowLayer/flowlayer/releases/download/${TARGET_TAG}" "${SEARCH_PATHS[@]}"
-assert_present_fixed "FlowLayer/tui/releases/download/${TARGET_TAG}" "${SEARCH_PATHS[@]}"
+assert_present_fixed "FlowLayer/flowlayer/releases/download/${TARGET_TAG}/flowlayer-server-" "${SEARCH_PATHS[@]}"
+assert_present_fixed "FlowLayer/flowlayer/releases/download/${TARGET_TAG}/flowlayer-client-tui-" "${SEARCH_PATHS[@]}"
+
+legacy_tui_repo_ref='FlowLayer/'
+legacy_tui_repo_ref+="tui"
+assert_absent_fixed "${legacy_tui_repo_ref}" "${SEARCH_PATHS[@]}"
 
 assert_file_contains_fixed scoop/bucket/flowlayer.json '"license": "Proprietary"'
 assert_file_contains_fixed "${WINGET_LOCALE_MANIFEST_PATH}" 'License: Proprietary'

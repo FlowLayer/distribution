@@ -11,18 +11,16 @@ It does not contain the application source code.
 - Installed binaries:
   - `flowlayer-server`
   - `flowlayer-client-tui`
-- Current artifact sources (v1.0.0):
-  - Server release: `FlowLayer/flowlayer`
-  - TUI release: `FlowLayer/tui`
+
+Official binary assets for `flowlayer-server` and `flowlayer-client-tui` are published in the global `FlowLayer/flowlayer` release.
+The TUI repository remains the source repository for client development, but official distribution binaries consumed here come from `FlowLayer/flowlayer`.
 
 FlowLayer binaries are native Go executables and do not require an additional runtime dependency to run.
-
-The current distribution state intentionally aggregates two independent release sources. A future single `flowlayer` bundle (containing both binaries per OS/arch) remains possible and would simplify some package managers.
 
 ## Licensing
 
 - `flowlayer-server` is distributed as proprietary software.
-- `flowlayer-client-tui` is distributed from the public `FlowLayer/tui` project.
+- `flowlayer-client-tui` is distributed in binary form through the global `FlowLayer/flowlayer` release.
 - This distribution repository (scripts, templates, and manifests) is licensed under Apache-2.0.
 - Package manager metadata uses `Proprietary` because the installed `flowlayer` package includes the proprietary server binary.
 
@@ -112,7 +110,7 @@ Using `curl | sh` is practical for onboarding and upgrades, but inspectable down
 
 ## Target Release Pipeline
 
-Current assumption: server and TUI releases share the same version tag.
+Current assumption: server and TUI assets are published under the same global release tag.
 
 1. Create tag `vX.Y.Z` in the main FlowLayer repository.
 2. Build multi-OS and multi-architecture artifacts.
