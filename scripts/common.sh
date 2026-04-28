@@ -36,8 +36,6 @@ normalize_release_tag() {
 }
 
 SHA256_PLACEHOLDER='REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS'
-WINGET_V1_0_0_WINDOWS_AMD64_SHA256='313ad7eb643e25517861f8652041cf80d91aa05831497cac9645c147ae94497b'
-WINGET_V1_0_0_WINDOWS_ARM64_SHA256='1b31622b3da8eff7acc6e5d78486130488eafc78adc5fa5f09ae9bbcaeb4a312'
 
 get_sha256_from_sums() {
   local sums_file="$1"
@@ -173,8 +171,7 @@ prepare_release_context() {
   local tui_sums_file
   local winget_sums_file
   local winget_bundle_dir
-  local winget_amd64_fallback_sha256=''
-  local winget_arm64_fallback_sha256=''
+  local winget_dist_dir
 
   VERSION="$(normalize_version "${version_input}")"
   RELEASE_TAG="$(normalize_release_tag "${tag_input}")"
@@ -205,9 +202,10 @@ prepare_release_context() {
     winget_bundle_dir="${resolved_root_dir}/${winget_bundle_dir}"
   fi
 
-  if [[ "${VERSION}" == '1.0.0' ]]; then
-    winget_amd64_fallback_sha256="${WINGET_V1_0_0_WINDOWS_AMD64_SHA256}"
-    winget_arm64_fallback_sha256="${WINGET_V1_0_0_WINDOWS_ARM64_SHA256}"
+  : "${FLOWLAYER_WINGET_DIST_DIR:=/workspace/dist}"
+  winget_dist_dir="${FLOWLAYER_WINGET_DIST_DIR}"
+  if [[ "${winget_dist_dir}" != /* ]]; then
+    winget_dist_dir="${resolved_root_dir}/${winget_dist_dir}"
   fi
 
   server_base_url="https://github.com/${FLOWLAYER_SERVER_OWNER}/${FLOWLAYER_SERVER_REPO}/releases/download/${RELEASE_TAG}"
@@ -250,7 +248,10 @@ prepare_release_context() {
 
   server_sums_file="${FLOWLAYER_SERVER_DIST_DIR}/SHA256SUMS"
   tui_sums_file="${FLOWLAYER_TUI_DIST_DIR}/SHA256SUMS"
-  winget_sums_file="${winget_bundle_dir}/SHA256SUMS"
+  winget_sums_file="${winget_dist_dir}/SHA256SUMS"
+  if [[ ! -f "${winget_sums_file}" ]]; then
+    winget_sums_file="${winget_bundle_dir}/SHA256SUMS"
+  fi
 
   set_sha256_var_from_sums 'SERVER_LINUX_AMD64_SHA256' "${server_sums_file}" "${SERVER_LINUX_AMD64_ASSET}" 'SERVER_LINUX_AMD64_SHA256'
   set_sha256_var_from_sums 'SERVER_LINUX_ARM64_SHA256' "${server_sums_file}" "${SERVER_LINUX_ARM64_ASSET}" 'SERVER_LINUX_ARM64_SHA256'
@@ -266,8 +267,8 @@ prepare_release_context() {
   set_sha256_var_from_sums 'TUI_WINDOWS_AMD64_SHA256' "${tui_sums_file}" "${TUI_WINDOWS_AMD64_ASSET}" 'TUI_WINDOWS_AMD64_SHA256'
   set_sha256_var_from_sums 'TUI_WINDOWS_ARM64_SHA256' "${tui_sums_file}" "${TUI_WINDOWS_ARM64_ASSET}" 'TUI_WINDOWS_ARM64_SHA256'
 
-  set_winget_bundle_sha256_var 'WINGET_WINDOWS_AMD64_SHA256' "${winget_sums_file}" "${WINGET_WINDOWS_AMD64_ASSET}" 'WINGET_WINDOWS_AMD64_SHA256' "${winget_amd64_fallback_sha256}"
-  set_winget_bundle_sha256_var 'WINGET_WINDOWS_ARM64_SHA256' "${winget_sums_file}" "${WINGET_WINDOWS_ARM64_ASSET}" 'WINGET_WINDOWS_ARM64_SHA256' "${winget_arm64_fallback_sha256}"
+  set_sha256_var_from_sums 'WINGET_WINDOWS_AMD64_SHA256' "${winget_sums_file}" "${WINGET_WINDOWS_AMD64_ASSET}" 'WINGET_WINDOWS_AMD64_SHA256'
+  set_sha256_var_from_sums 'WINGET_WINDOWS_ARM64_SHA256' "${winget_sums_file}" "${WINGET_WINDOWS_ARM64_ASSET}" 'WINGET_WINDOWS_ARM64_SHA256'
 
   # Backward-compatible aliases kept for templates/scripts still using old variable names.
   : "${DARWIN_AMD64_URL:=${SERVER_DARWIN_AMD64_URL}}"
@@ -288,6 +289,7 @@ prepare_release_context() {
   export FLOWLAYER_SERVER_OWNER FLOWLAYER_SERVER_REPO
   export FLOWLAYER_TUI_OWNER FLOWLAYER_TUI_REPO
   export FLOWLAYER_SERVER_DIST_DIR FLOWLAYER_TUI_DIST_DIR
+  export FLOWLAYER_WINGET_DIST_DIR
   export FLOWLAYER_WINGET_BUNDLE_DIR
 
   export SERVER_LINUX_AMD64_URL SERVER_LINUX_AMD64_SHA256
