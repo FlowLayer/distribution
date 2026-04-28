@@ -73,6 +73,57 @@ assert_regex_count_at_least() {
   fi
 }
 
+lookup_sha256_in_sums() {
+  local sums_file="$1"
+  local asset_name="$2"
+
+  [[ -f "${sums_file}" ]] || return 1
+
+  awk -v target="${asset_name}" '
+{
+  hash = $1
+  if (length(hash) != 64 || hash !~ /^[0-9A-Fa-f]+$/) {
+    next
+  }
+
+  file_path = $0
+  sub(/^[0-9A-Fa-f]+[[:space:]]+/, "", file_path)
+  sub(/^\*/, "", file_path)
+  sub(/^\.\/+/, "", file_path)
+
+  part_count = split(file_path, path_parts, "/")
+  basename = path_parts[part_count]
+  if (file_path == target || basename == target) {
+    print tolower(hash)
+    found = 1
+    exit
+  }
+}
+
+END {
+  if (!found) {
+    exit 1
+  }
+}
+' "${sums_file}"
+}
+
+resolve_sha256_from_sums_files() {
+  local asset_name="$1"
+  shift
+  local sums_file
+  local sha256
+
+  for sums_file in "$@"; do
+    if sha256="$(lookup_sha256_in_sums "${sums_file}" "${asset_name}")"; then
+      printf '%s\n' "${sha256}"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 cd "${ROOT_DIR}"
 
 TARGET_VERSION="${1:-1.0.0}"
@@ -86,8 +137,11 @@ LICENSE_TODO_TOKEN="${LICENSE_TOKEN_PREFIX}-LICENSE"
 
 SERVER_DIST_DIR="${FLOWLAYER_SERVER_DIST_DIR:-/workspace/server/dist}"
 TUI_DIST_DIR="${FLOWLAYER_TUI_DIST_DIR:-/workspace/tui/dist}"
+WINGET_DIST_DIR="${FLOWLAYER_WINGET_DIST_DIR:-/workspace/dist}"
 SERVER_SUMS_FILE="${SERVER_DIST_DIR}/SHA256SUMS"
 TUI_SUMS_FILE="${TUI_DIST_DIR}/SHA256SUMS"
+WINGET_SUMS_FILE="${WINGET_DIST_DIR}/SHA256SUMS"
+WINGET_SUMS_CANDIDATES=("${WINGET_SUMS_FILE}" "${SERVER_SUMS_FILE}" "${TUI_SUMS_FILE}")
 
 SEARCH_PATHS=(
   README.md
@@ -148,9 +202,18 @@ assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" 'ManifestType: in
 assert_file_contains_fixed "${WINGET_LOCALE_MANIFEST_PATH}" 'ManifestType: defaultLocale'
 assert_file_not_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" 'split archives'
 
-if [[ "${TARGET_VERSION}" == '1.0.0' ]]; then
-  assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" '313ad7eb643e25517861f8652041cf80d91aa05831497cac9645c147ae94497b'
-  assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" '1b31622b3da8eff7acc6e5d78486130488eafc78adc5fa5f09ae9bbcaeb4a312'
+WINGET_AMD64_ASSET="flowlayer-${TARGET_VERSION}-windows-amd64.zip"
+if winget_amd64_sha256="$(resolve_sha256_from_sums_files "${WINGET_AMD64_ASSET}" "${WINGET_SUMS_CANDIDATES[@]}")"; then
+  assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" "${winget_amd64_sha256}"
+else
+  log "Skipping Winget amd64 checksum assertion: no SHA256 entry found for ${WINGET_AMD64_ASSET}."
+fi
+
+WINGET_ARM64_ASSET="flowlayer-${TARGET_VERSION}-windows-arm64.zip"
+if winget_arm64_sha256="$(resolve_sha256_from_sums_files "${WINGET_ARM64_ASSET}" "${WINGET_SUMS_CANDIDATES[@]}")"; then
+  assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" "${winget_arm64_sha256}"
+else
+  log "Skipping Winget arm64 checksum assertion: no SHA256 entry found for ${WINGET_ARM64_ASSET}."
 fi
 
 if [[ -f "${WINGET_LEGACY_MANIFEST_PATH}" ]]; then
