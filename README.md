@@ -60,7 +60,7 @@ choco install flowlayer
 
 ### Winget (tracked)
 
-Manifests are tracked in [`winget/manifests/FlowLayer.FlowLayer/`](winget/manifests/FlowLayer.FlowLayer) and pass `winget validate`. **Local installation is currently blocked** by an upstream Winget internal error in our test matrix; once resolved, the standard `winget install FlowLayer.FlowLayer` will work.
+Manifests are tracked in [`winget/manifests/FlowLayer.FlowLayer/`](winget/manifests/FlowLayer.FlowLayer) and pass `winget validate`. **Local install of `flowlayer-server.exe` is verified** with `winget install --manifest <path>`. Public submission to [`microsoft/winget-pkgs`](https://github.com/microsoft/winget-pkgs) and exposing `flowlayer-client-tui.exe` as a second nested portable are tracked as follow-ups.
 
 ---
 
@@ -111,7 +111,7 @@ Key scripts:
 | Homebrew tap | ✓ Stable | Public tap, formula auto-synced per release |
 | Scoop bucket | ✓ Stable | Public bucket, manifest auto-synced per release |
 | Chocolatey | ⏳ In moderation | Package submitted, awaiting Community approval |
-| Winget | ⏳ Manifests tracked | Validates clean; local install blocked by upstream Winget error |
+| Winget | ⚠︎ Partial | Manifest valid; local install of `flowlayer-server.exe` verified; public submission and dual-binary nested install pending |
 
 ---
 
