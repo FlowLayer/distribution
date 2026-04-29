@@ -5,19 +5,19 @@ $toolsDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $checksumPlaceholder = 'REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS'
 $tempDir = Join-Path $env:TEMP ("flowlayer-" + [Guid]::NewGuid().ToString('N'))
 
-# Generated for release v1.0.0.
+# Generated for release v1.1.0.
 # Assets are published from the global FlowLayer release: FlowLayer/flowlayer.
-$serverUrlX64 = 'https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-server-1.0.0-windows-amd64.zip'
-$serverChecksumX64 = '1a68fe2087657b7a85e4d9210f73f0ac0eccb83d4b672c71442d4855cdfed968'
+$serverUrlX64 = 'https://github.com/FlowLayer/flowlayer/releases/download/v1.1.0/flowlayer-server-1.1.0-windows-amd64.zip'
+$serverChecksumX64 = '30e658f4cfc4f7a189e5a52b7cdfaf8a4e66de47e04a873b8dee535d001b8346'
 
-$serverUrlArm64 = 'https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-server-1.0.0-windows-arm64.zip'
-$serverChecksumArm64 = '3ea14c4838bd9bb3d90ddb2108fe3fa45ef48446f798cfad83c64fa7f7b64507'
+$serverUrlArm64 = 'https://github.com/FlowLayer/flowlayer/releases/download/v1.1.0/flowlayer-server-1.1.0-windows-arm64.zip'
+$serverChecksumArm64 = '51b11cb451327a0a826536e9a585b57c77d6d49d6c2d22b5ed48ab8fe6fb2a2b'
 
-$tuiUrlX64 = 'https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-client-tui-1.0.0-windows-amd64.zip'
-$tuiChecksumX64 = 'f4a12591c05f8757c014d05d5eda752ddea332ead4fe23fdb59f7ecc39158ef6'
+$tuiUrlX64 = 'https://github.com/FlowLayer/flowlayer/releases/download/v1.1.0/flowlayer-client-tui-1.1.0-windows-amd64.zip'
+$tuiChecksumX64 = '3f95b86a32b262880c703c52a047dd3ff604799001f1582c6a7b46fd2781c83e'
 
-$tuiUrlArm64 = 'https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-client-tui-1.0.0-windows-arm64.zip'
-$tuiChecksumArm64 = '6a094841a161ea8f827693859834e769ed2442d85a4e00178c6aee4d573e178c'
+$tuiUrlArm64 = 'https://github.com/FlowLayer/flowlayer/releases/download/v1.1.0/flowlayer-client-tui-1.1.0-windows-arm64.zip'
+$tuiChecksumArm64 = 'ba34e9f4434bf482faabb89a9d2ba86433ce9bd6c74faa96be99abff313f688f'
 
 $isArm64 = ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') -or ($env:PROCESSOR_ARCHITEW6432 -eq 'ARM64')
 
