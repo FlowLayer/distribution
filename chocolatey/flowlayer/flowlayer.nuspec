@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>flowlayer</id>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <title>FlowLayer</title>
     <authors>FlowLayer</authors>
     <owners>FlowLayer</owners>
@@ -15,7 +15,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>FlowLayer local process orchestration for development workflows.</summary>
     <description>FlowLayer package for flowlayer-server and flowlayer-client-tui. Assets are published from the global FlowLayer release: FlowLayer/flowlayer.</description>
-    <releaseNotes>Server amd64 URL: https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-server-1.0.0-windows-amd64.zip | SHA256: 1a68fe2087657b7a85e4d9210f73f0ac0eccb83d4b672c71442d4855cdfed968. Server arm64 URL: https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-server-1.0.0-windows-arm64.zip | SHA256: 3ea14c4838bd9bb3d90ddb2108fe3fa45ef48446f798cfad83c64fa7f7b64507. TUI amd64 URL: https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-client-tui-1.0.0-windows-amd64.zip | SHA256: f4a12591c05f8757c014d05d5eda752ddea332ead4fe23fdb59f7ecc39158ef6. TUI arm64 URL: https://github.com/FlowLayer/flowlayer/releases/download/v1.0.0/flowlayer-client-tui-1.0.0-windows-arm64.zip | SHA256: 6a094841a161ea8f827693859834e769ed2442d85a4e00178c6aee4d573e178c.</releaseNotes>
+    <releaseNotes>Server amd64 URL: https://github.com/FlowLayer/flowlayer/releases/download/v1.1.0/flowlayer-server-1.1.0-windows-amd64.zip | SHA256: 30e658f4cfc4f7a189e5a52b7cdfaf8a4e66de47e04a873b8dee535d001b8346. Server arm64 URL: https://github.com/FlowLayer/flowlayer/releases/download/v1.1.0/flowlayer-server-1.1.0-windows-arm64.zip | SHA256: 51b11cb451327a0a826536e9a585b57c77d6d49d6c2d22b5ed48ab8fe6fb2a2b. TUI amd64 URL: https://github.com/FlowLayer/flowlayer/releases/download/v1.1.0/flowlayer-client-tui-1.1.0-windows-amd64.zip | SHA256: 3f95b86a32b262880c703c52a047dd3ff604799001f1582c6a7b46fd2781c83e. TUI arm64 URL: https://github.com/FlowLayer/flowlayer/releases/download/v1.1.0/flowlayer-client-tui-1.1.0-windows-arm64.zip | SHA256: ba34e9f4434bf482faabb89a9d2ba86433ce9bd6c74faa96be99abff313f688f.</releaseNotes>
     <tags>flowlayer cli orchestration development</tags>
   </metadata>
 </package>
