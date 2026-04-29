@@ -6,7 +6,7 @@
 [![Homebrew](https://img.shields.io/badge/Homebrew-tap%20ready-4d8eff?style=flat-square)](#homebrew)
 [![Scoop](https://img.shields.io/badge/Scoop-bucket%20ready-4d8eff?style=flat-square)](#scoop-windows)
 [![Chocolatey](https://img.shields.io/badge/Chocolatey-pending%20moderation-orange?style=flat-square)](#chocolatey-pending)
-[![Winget](https://img.shields.io/badge/Winget-manifests%20tracked-orange?style=flat-square)](#winget-tracked)
+[![Winget](https://img.shields.io/badge/Winget-partial-orange?style=flat-square)](#winget-partial)
 
 [Website](https://flowlayer.tech/) · [Main repo](https://github.com/FlowLayer/flowlayer) · [Releases](https://github.com/FlowLayer/flowlayer/releases) · [TUI source](https://github.com/FlowLayer/tui)
 
@@ -58,7 +58,7 @@ The Chocolatey package is **submitted and in Community moderation**. Once approv
 choco install flowlayer
 ```
 
-### Winget (tracked)
+### Winget (partial)
 
 Manifests are tracked in [`winget/manifests/FlowLayer.FlowLayer/`](winget/manifests/FlowLayer.FlowLayer) and pass `winget validate`. **Local install of `flowlayer-server.exe` is verified** with `winget install --manifest <path>`. Public submission to [`microsoft/winget-pkgs`](https://github.com/microsoft/winget-pkgs) and exposing `flowlayer-client-tui.exe` as a second nested portable are tracked as follow-ups.
 
