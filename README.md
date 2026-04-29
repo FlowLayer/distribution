@@ -60,7 +60,9 @@ choco install flowlayer
 
 ### Winget (partial)
 
-Manifests are tracked in [`winget/manifests/FlowLayer.FlowLayer/`](winget/manifests/FlowLayer.FlowLayer) and pass `winget validate`. **Local install of `flowlayer-server.exe` is verified** with `winget install --manifest <path>`. Public submission to [`microsoft/winget-pkgs`](https://github.com/microsoft/winget-pkgs) and exposing `flowlayer-client-tui.exe` as a second nested portable are tracked as follow-ups.
+Manifests are tracked in [`winget/manifests/FlowLayer.FlowLayer/`](winget/manifests/FlowLayer.FlowLayer) and pass `winget validate`. **End-to-end local install verified**: `winget install --manifest <path>` registers FlowLayer under ARP and exposes both `flowlayer-server` and `flowlayer-client-tui` aliases via the dual-binary nested portable. Public submission to [`microsoft/winget-pkgs`](https://github.com/microsoft/winget-pkgs) is the only remaining follow-up before promoting this channel to *validated*.
+
+> Note: when invoking `winget install --manifest <path>` against a freshly downloaded archive, SmartScreen / `IAttachmentExecute` may silently hang on unsigned binaries (Mark-of-the-Web). The published flow via `microsoft/winget-pkgs` is unaffected; signing the Windows binaries (Authenticode) is tracked as a separate follow-up.
 
 ---
 
@@ -111,7 +113,7 @@ Key scripts:
 | Homebrew tap | ✓ Stable | Public tap, formula auto-synced per release |
 | Scoop bucket | ✓ Stable | Public bucket, manifest auto-synced per release |
 | Chocolatey | ⏳ In moderation | Package submitted, awaiting Community approval |
-| Winget | ⚠︎ Partial | Manifest valid; local install of `flowlayer-server.exe` verified; public submission and dual-binary nested install pending |
+| Winget | ⚠︎ Partial | Manifest valid; dual-binary local install verified end-to-end; pending submission to `microsoft/winget-pkgs` |
 
 ---
 
