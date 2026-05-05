@@ -126,7 +126,7 @@ resolve_sha256_from_sums_files() {
 
 cd "${ROOT_DIR}"
 
-TARGET_VERSION="${1:-1.1.0}"
+TARGET_VERSION="${1:-1.1.1}"
 TARGET_VERSION="${TARGET_VERSION#v}"
 TARGET_TAG="v${TARGET_VERSION}"
 LEGACY_VERSION_MAJOR_MINOR='1.2'
@@ -146,10 +146,9 @@ WINGET_SUMS_CANDIDATES=("${WINGET_SUMS_FILE}" "${SERVER_SUMS_FILE}" "${TUI_SUMS_
 SEARCH_PATHS=(
   README.md
   install.sh
+  Formula
   homebrew
-  winget
   scoop
-  chocolatey
   scripts
   templates
   .github
@@ -166,17 +165,51 @@ else
   log "Mode: ${MODE}. Local SHA256SUMS were not found; validating generated files only."
 fi
 
-require_file homebrew/Formula/flowlayer.rb
-require_file scoop/bucket/flowlayer.json
-require_file chocolatey/flowlayer/flowlayer.nuspec
-require_file chocolatey/flowlayer/tools/chocolateyinstall.ps1
-require_file "winget/manifests/FlowLayer.FlowLayer/${TARGET_VERSION}/FlowLayer.FlowLayer.yaml"
-require_file "winget/manifests/FlowLayer.FlowLayer/${TARGET_VERSION}/FlowLayer.FlowLayer.installer.yaml"
-require_file "winget/manifests/FlowLayer.FlowLayer/${TARGET_VERSION}/FlowLayer.FlowLayer.locale.en-US.yaml"
+FORMULA_PATH='Formula/flowlayer.rb'
+HOMEBREW_FORMULA_PATH='homebrew/Formula/flowlayer.rb'
+SCOOP_MANIFEST_PATH='scoop/bucket/flowlayer.json'
+CHOCOLATEY_NUSPEC_PATH='chocolatey/flowlayer/flowlayer.nuspec'
+CHOCOLATEY_INSTALL_SCRIPT_PATH='chocolatey/flowlayer/tools/chocolateyinstall.ps1'
 
-WINGET_VERSION_MANIFEST_PATH="winget/manifests/FlowLayer.FlowLayer/${TARGET_VERSION}/FlowLayer.FlowLayer.yaml"
-WINGET_INSTALLER_MANIFEST_PATH="winget/manifests/FlowLayer.FlowLayer/${TARGET_VERSION}/FlowLayer.FlowLayer.installer.yaml"
-WINGET_LOCALE_MANIFEST_PATH="winget/manifests/FlowLayer.FlowLayer/${TARGET_VERSION}/FlowLayer.FlowLayer.locale.en-US.yaml"
+WINGET_VERSION_DIR="winget/manifests/FlowLayer.FlowLayer/${TARGET_VERSION}"
+WINGET_VERSION_MANIFEST_PATH="${WINGET_VERSION_DIR}/FlowLayer.FlowLayer.yaml"
+WINGET_INSTALLER_MANIFEST_PATH="${WINGET_VERSION_DIR}/FlowLayer.FlowLayer.installer.yaml"
+WINGET_LOCALE_MANIFEST_PATH="${WINGET_VERSION_DIR}/FlowLayer.FlowLayer.locale.en-US.yaml"
+
+require_file "${HOMEBREW_FORMULA_PATH}"
+require_file "${FORMULA_PATH}"
+require_file "${SCOOP_MANIFEST_PATH}"
+
+# Winget and Chocolatey may be released separately; they are optional for Homebrew/Scoop-only updates.
+CHECK_WINGET='0'
+if [[ -d "${WINGET_VERSION_DIR}" ]]; then
+  CHECK_WINGET='1'
+  SEARCH_PATHS+=(winget)
+  require_file "${WINGET_VERSION_MANIFEST_PATH}"
+  require_file "${WINGET_INSTALLER_MANIFEST_PATH}"
+  require_file "${WINGET_LOCALE_MANIFEST_PATH}"
+else
+  log "Skipping Winget checks: ${WINGET_VERSION_DIR} does not exist."
+fi
+
+CHECK_CHOCOLATEY='0'
+if [[ -f "${CHOCOLATEY_NUSPEC_PATH}" && -f "${CHOCOLATEY_INSTALL_SCRIPT_PATH}" ]]; then
+  if grep -F -q -- "<version>${TARGET_VERSION}</version>" "${CHOCOLATEY_NUSPEC_PATH}" || \
+     grep -F -q -- "Generated for release ${TARGET_TAG}." "${CHOCOLATEY_INSTALL_SCRIPT_PATH}" || \
+     grep -F -q -- "/releases/download/${TARGET_TAG}/flowlayer-server-${TARGET_VERSION}-" "${CHOCOLATEY_INSTALL_SCRIPT_PATH}" || \
+     grep -F -q -- "/releases/download/${TARGET_TAG}/flowlayer-client-tui-${TARGET_VERSION}-" "${CHOCOLATEY_INSTALL_SCRIPT_PATH}"; then
+    CHECK_CHOCOLATEY='1'
+  fi
+fi
+
+if [[ "${CHECK_CHOCOLATEY}" == '1' ]]; then
+  SEARCH_PATHS+=(chocolatey)
+  require_file "${CHOCOLATEY_NUSPEC_PATH}"
+  require_file "${CHOCOLATEY_INSTALL_SCRIPT_PATH}"
+else
+  log "Skipping Chocolatey checks: files are not updated for ${TARGET_VERSION}."
+fi
+
 WINGET_LEGACY_MANIFEST_PATH='winget/manifests/FlowLayer.FlowLayer/flowlayer.yaml'
 
 assert_absent_fixed "${LEGACY_VERSION}" "${SEARCH_PATHS[@]}"
@@ -186,67 +219,124 @@ assert_absent_fixed "${LICENSE_TODO_TOKEN}" "${SEARCH_PATHS[@]}"
 assert_present_fixed "FlowLayer/flowlayer/releases/download/${TARGET_TAG}/flowlayer-server-" "${SEARCH_PATHS[@]}"
 assert_present_fixed "FlowLayer/flowlayer/releases/download/${TARGET_TAG}/flowlayer-client-tui-" "${SEARCH_PATHS[@]}"
 
+assert_file_contains_fixed "${FORMULA_PATH}" "version \"${TARGET_VERSION}\""
+assert_file_contains_fixed "${HOMEBREW_FORMULA_PATH}" "version \"${TARGET_VERSION}\""
+assert_file_contains_fixed "${SCOOP_MANIFEST_PATH}" "\"version\": \"${TARGET_VERSION}\""
+
+assert_file_contains_fixed "${FORMULA_PATH}" "FlowLayer/flowlayer/releases/download/${TARGET_TAG}/flowlayer-server-${TARGET_VERSION}-"
+assert_file_contains_fixed "${FORMULA_PATH}" "FlowLayer/flowlayer/releases/download/${TARGET_TAG}/flowlayer-client-tui-${TARGET_VERSION}-"
+assert_file_contains_fixed "${HOMEBREW_FORMULA_PATH}" "FlowLayer/flowlayer/releases/download/${TARGET_TAG}/flowlayer-server-${TARGET_VERSION}-"
+assert_file_contains_fixed "${HOMEBREW_FORMULA_PATH}" "FlowLayer/flowlayer/releases/download/${TARGET_TAG}/flowlayer-client-tui-${TARGET_VERSION}-"
+assert_file_contains_fixed "${SCOOP_MANIFEST_PATH}" "FlowLayer/flowlayer/releases/download/${TARGET_TAG}/flowlayer-server-${TARGET_VERSION}-windows-amd64.zip"
+assert_file_contains_fixed "${SCOOP_MANIFEST_PATH}" "FlowLayer/flowlayer/releases/download/${TARGET_TAG}/flowlayer-client-tui-${TARGET_VERSION}-windows-amd64.zip"
+assert_file_contains_fixed "${SCOOP_MANIFEST_PATH}" "FlowLayer/flowlayer/releases/download/${TARGET_TAG}/flowlayer-server-${TARGET_VERSION}-windows-arm64.zip"
+assert_file_contains_fixed "${SCOOP_MANIFEST_PATH}" "FlowLayer/flowlayer/releases/download/${TARGET_TAG}/flowlayer-client-tui-${TARGET_VERSION}-windows-arm64.zip"
+
 legacy_tui_repo_ref='FlowLayer/'
 legacy_tui_repo_ref+="tui"
 legacy_tui_releases_ref="${legacy_tui_repo_ref}"
 legacy_tui_releases_ref+="/releases"
 assert_absent_fixed "${legacy_tui_releases_ref}" "${SEARCH_PATHS[@]}"
 
+legacy_server_repo_ref='FlowLayer/'
+legacy_server_repo_ref+="server"
+legacy_server_releases_ref="${legacy_server_repo_ref}"
+legacy_server_releases_ref+="/releases"
+assert_absent_fixed "${legacy_server_releases_ref}" "${SEARCH_PATHS[@]}"
+
 legacy_tui_releases_url='github.com/'
 legacy_tui_releases_url+="${legacy_tui_releases_ref}"
 assert_absent_fixed "${legacy_tui_releases_url}" "${SEARCH_PATHS[@]}"
 
-assert_file_contains_fixed scoop/bucket/flowlayer.json '"license": "Proprietary"'
-assert_file_contains_fixed "${WINGET_LOCALE_MANIFEST_PATH}" 'License: Proprietary'
-assert_file_contains_fixed chocolatey/flowlayer/flowlayer.nuspec 'Proprietary'
+legacy_server_releases_url='github.com/'
+legacy_server_releases_url+="${legacy_server_releases_ref}"
+assert_absent_fixed "${legacy_server_releases_url}" "${SEARCH_PATHS[@]}"
 
-assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" "flowlayer-${TARGET_VERSION}-windows-amd64.zip"
-assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" "flowlayer-${TARGET_VERSION}-windows-arm64.zip"
-assert_file_contains_fixed "${WINGET_LOCALE_MANIFEST_PATH}" 'PackageLocale: en-US'
-assert_file_contains_fixed "${WINGET_VERSION_MANIFEST_PATH}" 'ManifestType: version'
-assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" 'ManifestType: installer'
-assert_file_contains_fixed "${WINGET_LOCALE_MANIFEST_PATH}" 'ManifestType: defaultLocale'
-assert_file_not_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" 'split archives'
+assert_file_not_contains_fixed "${FORMULA_PATH}" "${legacy_tui_releases_ref}"
+assert_file_not_contains_fixed "${FORMULA_PATH}" "${legacy_server_releases_ref}"
+assert_file_not_contains_fixed "${HOMEBREW_FORMULA_PATH}" "${legacy_tui_releases_ref}"
+assert_file_not_contains_fixed "${HOMEBREW_FORMULA_PATH}" "${legacy_server_releases_ref}"
+assert_file_not_contains_fixed "${SCOOP_MANIFEST_PATH}" "${legacy_tui_releases_ref}"
+assert_file_not_contains_fixed "${SCOOP_MANIFEST_PATH}" "${legacy_server_releases_ref}"
+
+assert_file_contains_fixed "${SCOOP_MANIFEST_PATH}" '"license": "Proprietary"'
+
+if [[ "${CHECK_WINGET}" == '1' ]]; then
+  assert_file_contains_fixed "${WINGET_LOCALE_MANIFEST_PATH}" 'License: Proprietary'
+fi
+
+if [[ "${CHECK_CHOCOLATEY}" == '1' ]]; then
+  assert_file_contains_fixed "${CHOCOLATEY_NUSPEC_PATH}" 'Proprietary'
+fi
+
+if [[ "${CHECK_WINGET}" == '1' ]]; then
+  assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" "flowlayer-${TARGET_VERSION}-windows-amd64.zip"
+  assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" "flowlayer-${TARGET_VERSION}-windows-arm64.zip"
+  assert_file_contains_fixed "${WINGET_LOCALE_MANIFEST_PATH}" 'PackageLocale: en-US'
+  assert_file_contains_fixed "${WINGET_VERSION_MANIFEST_PATH}" 'ManifestType: version'
+  assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" 'ManifestType: installer'
+  assert_file_contains_fixed "${WINGET_LOCALE_MANIFEST_PATH}" 'ManifestType: defaultLocale'
+  assert_file_not_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" 'split archives'
+fi
 
 WINGET_AMD64_ASSET="flowlayer-${TARGET_VERSION}-windows-amd64.zip"
-if winget_amd64_sha256="$(resolve_sha256_from_sums_files "${WINGET_AMD64_ASSET}" "${WINGET_SUMS_CANDIDATES[@]}")"; then
-  assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" "${winget_amd64_sha256}"
-else
-  log "Skipping Winget amd64 checksum assertion: no SHA256 entry found for ${WINGET_AMD64_ASSET}."
+if [[ "${CHECK_WINGET}" == '1' ]]; then
+  if winget_amd64_sha256="$(resolve_sha256_from_sums_files "${WINGET_AMD64_ASSET}" "${WINGET_SUMS_CANDIDATES[@]}")"; then
+    assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" "${winget_amd64_sha256}"
+  else
+    log "Skipping Winget amd64 checksum assertion: no SHA256 entry found for ${WINGET_AMD64_ASSET}."
+  fi
 fi
 
 WINGET_ARM64_ASSET="flowlayer-${TARGET_VERSION}-windows-arm64.zip"
-if winget_arm64_sha256="$(resolve_sha256_from_sums_files "${WINGET_ARM64_ASSET}" "${WINGET_SUMS_CANDIDATES[@]}")"; then
-  assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" "${winget_arm64_sha256}"
-else
-  log "Skipping Winget arm64 checksum assertion: no SHA256 entry found for ${WINGET_ARM64_ASSET}."
+if [[ "${CHECK_WINGET}" == '1' ]]; then
+  if winget_arm64_sha256="$(resolve_sha256_from_sums_files "${WINGET_ARM64_ASSET}" "${WINGET_SUMS_CANDIDATES[@]}")"; then
+    assert_file_contains_fixed "${WINGET_INSTALLER_MANIFEST_PATH}" "${winget_arm64_sha256}"
+  else
+    log "Skipping Winget arm64 checksum assertion: no SHA256 entry found for ${WINGET_ARM64_ASSET}."
+  fi
 fi
 
-if [[ -f "${WINGET_LEGACY_MANIFEST_PATH}" ]]; then
+if [[ "${CHECK_WINGET}" == '1' && -f "${WINGET_LEGACY_MANIFEST_PATH}" ]]; then
   fail "Legacy Winget singleton manifest should not exist: ${WINGET_LEGACY_MANIFEST_PATH}"
 fi
 
 assert_regex_count_at_least homebrew/Formula/flowlayer.rb 'sha256 "[0-9a-f]{64}"' 2
+assert_regex_count_at_least Formula/flowlayer.rb 'sha256 "[0-9a-f]{64}"' 2
 assert_regex_count_at_least scoop/bucket/flowlayer.json '"[0-9a-f]{64}"' 4
-assert_regex_count_at_least chocolatey/flowlayer/flowlayer.nuspec '[0-9a-f]{64}' 4
-assert_regex_count_at_least chocolatey/flowlayer/tools/chocolateyinstall.ps1 "^\\\$(serverChecksumX64|serverChecksumArm64|tuiChecksumX64|tuiChecksumArm64)[[:space:]]*=[[:space:]]*'[0-9a-f]{64}'" 4
+if [[ "${CHECK_CHOCOLATEY}" == '1' ]]; then
+  assert_regex_count_at_least "${CHOCOLATEY_NUSPEC_PATH}" '[0-9a-f]{64}' 4
+  assert_regex_count_at_least "${CHOCOLATEY_INSTALL_SCRIPT_PATH}" "^\\\$(serverChecksumX64|serverChecksumArm64|tuiChecksumX64|tuiChecksumArm64)[[:space:]]*=[[:space:]]*'[0-9a-f]{64}'" 4
+fi
 
 SHA256_PLACEHOLDER='REPLACE_WITH_REAL_SHA256_FROM_RELEASE_SHA256SUMS'
-placeholder_hits="$(grep -R -n -F -- "${SHA256_PLACEHOLDER}" homebrew winget scoop chocolatey || true)"
+PLACEHOLDER_PATHS=(homebrew scoop)
+if [[ "${CHECK_WINGET}" == '1' ]]; then
+  PLACEHOLDER_PATHS+=(winget)
+fi
+if [[ "${CHECK_CHOCOLATEY}" == '1' ]]; then
+  PLACEHOLDER_PATHS+=(chocolatey)
+fi
+placeholder_hits="$(grep -R -n -F -- "${SHA256_PLACEHOLDER}" "${PLACEHOLDER_PATHS[@]}" || true)"
 if [[ -n "${placeholder_hits}" ]]; then
-  allowed_guard_pattern="^chocolatey/flowlayer/tools/chocolateyinstall.ps1:[0-9][0-9]*:\\\$checksumPlaceholder = '${SHA256_PLACEHOLDER}'$"
-  disallowed_placeholder_hits="$(printf '%s\n' "${placeholder_hits}" | grep -E -v -- "${allowed_guard_pattern}" || true)"
-  if [[ -n "${disallowed_placeholder_hits}" ]]; then
-    printf '%s\n' "${disallowed_placeholder_hits}" >&2
-    fail 'Checksum placeholder found outside the explicit Chocolatey guard constant.'
-  fi
+  if [[ "${CHECK_CHOCOLATEY}" == '1' ]]; then
+    allowed_guard_pattern="^chocolatey/flowlayer/tools/chocolateyinstall.ps1:[0-9][0-9]*:\\\$checksumPlaceholder = '${SHA256_PLACEHOLDER}'$"
+    disallowed_placeholder_hits="$(printf '%s\n' "${placeholder_hits}" | grep -E -v -- "${allowed_guard_pattern}" || true)"
+    if [[ -n "${disallowed_placeholder_hits}" ]]; then
+      printf '%s\n' "${disallowed_placeholder_hits}" >&2
+      fail 'Checksum placeholder found outside the explicit Chocolatey guard constant.'
+    fi
 
-  if grep -E -q -- "^[[:space:]]*\\\$(serverChecksumX64|serverChecksumArm64|tuiChecksumX64|tuiChecksumArm64)[[:space:]]*=[[:space:]]*'${SHA256_PLACEHOLDER}'" chocolatey/flowlayer/tools/chocolateyinstall.ps1; then
-    grep -n -E -- "^[[:space:]]*\\\$(serverChecksumX64|serverChecksumArm64|tuiChecksumX64|tuiChecksumArm64)[[:space:]]*=[[:space:]]*'${SHA256_PLACEHOLDER}'" chocolatey/flowlayer/tools/chocolateyinstall.ps1 >&2
-    fail 'Chocolatey effective checksum variables still use the placeholder.'
-  fi
+    if grep -E -q -- "^[[:space:]]*\\\$(serverChecksumX64|serverChecksumArm64|tuiChecksumX64|tuiChecksumArm64)[[:space:]]*=[[:space:]]*'${SHA256_PLACEHOLDER}'" "${CHOCOLATEY_INSTALL_SCRIPT_PATH}"; then
+      grep -n -E -- "^[[:space:]]*\\\$(serverChecksumX64|serverChecksumArm64|tuiChecksumX64|tuiChecksumArm64)[[:space:]]*=[[:space:]]*'${SHA256_PLACEHOLDER}'" "${CHOCOLATEY_INSTALL_SCRIPT_PATH}" >&2
+      fail 'Chocolatey effective checksum variables still use the placeholder.'
+    fi
 
-  log 'Checksum placeholder is present only as an explicit Chocolatey guard constant.'
+    log 'Checksum placeholder is present only as an explicit Chocolatey guard constant.'
+  else
+    printf '%s\n' "${placeholder_hits}" >&2
+    fail 'Checksum placeholder found in checked channels.'
+  fi
 fi
 
 printf 'OK: release-sync consistency checks passed (mode=%s, version=%s, tag=%s)\n' "${MODE}" "${TARGET_VERSION}" "${TARGET_TAG}"
