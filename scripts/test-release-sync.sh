@@ -126,7 +126,7 @@ resolve_sha256_from_sums_files() {
 
 cd "${ROOT_DIR}"
 
-TARGET_VERSION="${1:-1.1.0}"
+TARGET_VERSION="${1:-1.1.1}"
 TARGET_VERSION="${TARGET_VERSION#v}"
 TARGET_TAG="v${TARGET_VERSION}"
 LEGACY_VERSION_MAJOR_MINOR='1.2'
@@ -167,6 +167,7 @@ else
 fi
 
 require_file homebrew/Formula/flowlayer.rb
+require_file Formula/flowlayer.rb
 require_file scoop/bucket/flowlayer.json
 require_file chocolatey/flowlayer/flowlayer.nuspec
 require_file chocolatey/flowlayer/tools/chocolateyinstall.ps1
@@ -227,6 +228,7 @@ if [[ -f "${WINGET_LEGACY_MANIFEST_PATH}" ]]; then
 fi
 
 assert_regex_count_at_least homebrew/Formula/flowlayer.rb 'sha256 "[0-9a-f]{64}"' 2
+assert_regex_count_at_least Formula/flowlayer.rb 'sha256 "[0-9a-f]{64}"' 2
 assert_regex_count_at_least scoop/bucket/flowlayer.json '"[0-9a-f]{64}"' 4
 assert_regex_count_at_least chocolatey/flowlayer/flowlayer.nuspec '[0-9a-f]{64}' 4
 assert_regex_count_at_least chocolatey/flowlayer/tools/chocolateyinstall.ps1 "^\\\$(serverChecksumX64|serverChecksumArm64|tuiChecksumX64|tuiChecksumArm64)[[:space:]]*=[[:space:]]*'[0-9a-f]{64}'" 4
