@@ -5,7 +5,7 @@
 [![install.sh](https://img.shields.io/badge/install.sh-ready-4d8eff?style=flat-square)](install.sh)
 [![Homebrew](https://img.shields.io/badge/Homebrew-tap%20ready-4d8eff?style=flat-square)](#homebrew)
 [![Scoop](https://img.shields.io/badge/Scoop-bucket%20ready-4d8eff?style=flat-square)](#scoop-windows)
-[![Chocolatey](https://img.shields.io/badge/Chocolatey-pending%20moderation-orange?style=flat-square)](#chocolatey-pending)
+[![Chocolatey](https://img.shields.io/badge/Chocolatey-approved-4d8eff?style=flat-square)](#chocolatey)
 [![Winget](https://img.shields.io/badge/Winget-partial-orange?style=flat-square)](#winget-partial)
 
 [Website](https://flowlayer.tech/) · [Main repo](https://github.com/FlowLayer/flowlayer) · [Releases](https://github.com/FlowLayer/flowlayer/releases) · [TUI source](https://github.com/FlowLayer/tui)
@@ -50,9 +50,9 @@ scoop bucket add flowlayer https://github.com/FlowLayer/distribution.git
 scoop install flowlayer
 ```
 
-### Chocolatey (pending)
+### Chocolatey
 
-The Chocolatey package is **submitted and in Community moderation**. Once approved it will install with:
+The Chocolatey package is **approved on Chocolatey Community** and can be installed directly with:
 
 ```powershell
 choco install flowlayer
@@ -112,7 +112,7 @@ Key scripts:
 | `install.sh` | ✓ Stable | OS + arch detection, checksum verification, idempotent |
 | Homebrew tap | ✓ Stable | Public tap, formula auto-synced per release |
 | Scoop bucket | ✓ Stable | Public bucket, manifest auto-synced per release |
-| Chocolatey | ⏳ In moderation | Package submitted, awaiting Community approval |
+| Chocolatey | ✓ Stable | Approved on Chocolatey Community |
 | Winget | ⚠︎ Partial | Manifest valid; dual-binary local install verified end-to-end; pending submission to `microsoft/winget-pkgs` |
 
 ---
